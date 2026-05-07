@@ -23,6 +23,17 @@ export default function AppLayout() {
     }
   }, [chatSessions, activeChatId]);
 
+  const deleteChatMutation = useMutation({
+    mutationFn: (id) => base44.entities.ChatSession.delete(id),
+    onSuccess: (_, deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
+      if (activeChatId === deletedId) {
+        const remaining = chatSessions.filter(c => c.id !== deletedId);
+        setActiveChatId(remaining[0]?.id || null);
+      }
+    },
+  });
+
   const createChatMutation = useMutation({
     mutationFn: () => base44.entities.ChatSession.create({
       title: `Consulta ${chatSessions.length + 1}`,
@@ -45,6 +56,7 @@ export default function AppLayout() {
         activeChatId={activeChatId}
         onSelectChat={setActiveChatId}
         onNewChat={() => createChatMutation.mutate()}
+        onDeleteChat={(id) => deleteChatMutation.mutate(id)}
       />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
