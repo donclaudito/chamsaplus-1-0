@@ -1,0 +1,43 @@
+{
+  "name": "LLMUsageLog",
+  "type": "object",
+  "properties": {
+    "model_id": {
+      "type": "string",
+      "description": "ID do modelo usado (ex: claude_sonnet_4_6)"
+    },
+    "model_label": {
+      "type": "string",
+      "description": "Nome amig\u00e1vel do modelo"
+    },
+    "input_tokens": {
+      "type": "number",
+      "description": "Tokens de entrada"
+    },
+    "output_tokens": {
+      "type": "number",
+      "description": "Tokens de sa\u00edda"
+    },
+    "estimated_cost_usd": {
+      "type": "number",
+      "description": "Custo estimado em USD"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "ID da sess\u00e3o de chat"
+    },
+    "date_key": {
+      "type": "string",
+      "description": "Data no formato YYYY-MM-DD para agrupamento di\u00e1rio"
+    },
+    "month_key": {
+      "type": "string",
+      "description": "M\u00eas no formato YYYY-MM para agrupamento mensal"
+    }
+  },
+  "required": [
+    "model_id",
+    "input_tokens",
+    "output_tokens"
+  ]
+}

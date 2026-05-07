@@ -110,8 +110,27 @@ export default function Chat() {
         outputTokens = Math.round(responseContent.length / 4);
       }
 
-      // Track usage
+      // Track usage (in-session)
       setUsageLog(prev => [...prev, { modelId: chosenModel, inputTokens, outputTokens }]);
+
+      // Persist usage to database
+      const now = new Date();
+      const dateKey = now.toISOString().slice(0, 10);
+      const monthKey = now.toISOString().slice(0, 7);
+      const rates = { 'claude_sonnet_4_6': { input: 0.003, output: 0.015 }, 'llama-3.3-70b-versatile': { input: 0.0001, output: 0.0001 }, 'gpt_5_mini': { input: 0.00015, output: 0.0006 } };
+      const r = rates[chosenModel] || { input: 0.001, output: 0.002 };
+      const estimatedCost = (inputTokens / 1000) * r.input + (outputTokens / 1000) * r.output;
+      const modelMeta2 = MODELS.find(m => m.id === chosenModel);
+      base44.entities.LLMUsageLog.create({
+        model_id: chosenModel,
+        model_label: modelMeta2?.label || chosenModel,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        estimated_cost_usd: estimatedCost,
+        session_id: activeChatId,
+        date_key: dateKey,
+        month_key: monthKey,
+      });
 
       const assistantMsg = { role: 'assistant', content: responseContent, timestamp: new Date().toISOString() };
       const updatedMessages = [...newMessages, assistantMsg];

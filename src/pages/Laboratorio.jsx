@@ -3,6 +3,7 @@ import { Beaker, Brain, Shield, Zap, History, Activity, CheckCircle2, Sparkles }
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
+import LLMConsumoDashboard from '@/components/laboratorio/LLMConsumoDashboard';
 
 const skills = [
   { label: 'Deep Reasoning', desc: 'Protocolo CoT (Chain-of-Thought)', icon: Brain, color: 'text-purple-600', bg: 'bg-purple-500/10' },
@@ -36,6 +37,14 @@ export default function Laboratorio() {
           <p className="text-sm text-muted-foreground mt-1">
             Monitoramento neural e métricas de performance da Chamsa Isa
           </p>
+        </div>
+
+        {/* LLM Consumo Dashboard */}
+        <div className="mb-8">
+          <h2 className="text-base font-semibold mb-4 flex items-center gap-2 text-muted-foreground uppercase tracking-wider text-xs">
+            📊 Consumo LLM — Dia / Mês
+          </h2>
+          <LLMConsumoDashboard />
         </div>
 
         {/* Metrics */}
