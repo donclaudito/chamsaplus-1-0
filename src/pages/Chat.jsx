@@ -67,6 +67,15 @@ export default function Chat() {
     setMessages(newMessages);
     setIsLoading(true);
 
+    // Update session title with the first user message snippet
+    const userMessages = newMessages.filter(m => m.role === 'user');
+    if (userMessages.length === 1) {
+      const snippet = text.replace(/\s+/g, ' ').trim().slice(0, 50);
+      const newTitle = snippet.length < text.trim().length ? snippet + '…' : snippet;
+      base44.entities.ChatSession.update(activeChatId, { title: newTitle })
+        .then(() => queryClient.invalidateQueries({ queryKey: ['chatSessions'] }));
+    }
+
     const apiMessages = newMessages
       .filter(m => m.role !== 'data-block')
       .map(m => ({ role: m.role, content: m.content }));
