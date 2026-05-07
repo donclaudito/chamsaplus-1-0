@@ -1,0 +1,37 @@
+{
+  "name": "Knowledge",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Nome do documento ou protocolo"
+    },
+    "content": {
+      "type": "string",
+      "description": "Conte\u00fado textual do documento"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "protocolo",
+        "laudo",
+        "pesquisa",
+        "notebook",
+        "outro"
+      ],
+      "default": "outro",
+      "description": "Categoria do documento"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL do arquivo enviado"
+    },
+    "file_type": {
+      "type": "string",
+      "description": "Tipo do arquivo (pdf, md, txt, etc)"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}
