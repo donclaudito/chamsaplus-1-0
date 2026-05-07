@@ -137,7 +137,20 @@ export default function Chat() {
       let inputTokens = 0;
       let outputTokens = 0;
 
-      if (modelMeta.provider === 'custom') {
+      // Check if user has their own active LLM config
+      let userHasCustomLLM = false;
+      try {
+        const userConfigs = await base44.entities.UserLLMConfig.filter({ is_active: true });
+        userHasCustomLLM = userConfigs?.length > 0;
+      } catch (_) {}
+
+      if (userHasCustomLLM) {
+        // Use user's own API key via backend function
+        const res = await base44.functions.invoke('invokeCustomLLM', { messages: llmMessages });
+        responseContent = res.data.content;
+        inputTokens = res.data.usage?.prompt_tokens || Math.round(promptText.length / 4);
+        outputTokens = res.data.usage?.completion_tokens || Math.round(responseContent.length / 4);
+      } else if (modelMeta.provider === 'custom') {
         // Route to Groq via backend function (Llama 3.3 70B)
         const res = await base44.functions.invoke('callLlama3', { messages: llmMessages });
         responseContent = res.data.content;
@@ -149,7 +162,6 @@ export default function Chat() {
           prompt: promptText,
           model: chosenModel
         });
-        // Estimate tokens from character count (aprox 4 chars/token)
         inputTokens = Math.round(promptText.length / 4);
         outputTokens = Math.round(responseContent.length / 4);
       }

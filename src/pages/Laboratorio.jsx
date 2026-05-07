@@ -7,6 +7,7 @@ import CollapsiblePanel from '@/components/laboratorio/CollapsiblePanel';
 import ThemeSelector from '@/components/laboratorio/ThemeSelector';
 import ComponentShowcase from '@/components/laboratorio/ComponentShowcase';
 import SkillsPanel from '@/components/laboratorio/SkillsPanel';
+import LLMConfigPanel from '@/components/laboratorio/LLMConfigPanel';
 
 const coreSkills = [
   { label: 'Deep Reasoning', desc: 'Protocolo CoT (Chain-of-Thought)', icon: Brain, color: 'text-purple-600', bg: 'bg-purple-500/10' },
@@ -30,6 +31,7 @@ const tests = [
 const TABS = [
   { id: 'lab', label: 'Laboratório', icon: Beaker },
   { id: 'skills', label: 'Skills', icon: Zap },
+  { id: 'llm', label: 'Minha API', icon: Brain },
 ];
 
 export default function Laboratorio() {
@@ -193,6 +195,27 @@ export default function Laboratorio() {
                 </p>
               </div>
               <SkillsPanel />
+            </motion.div>
+          )}
+
+          {activeTab === 'llm' && (
+            <motion.div
+              key="llm"
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.18 }}
+            >
+              <div className={`mb-4`}>
+                <h2 className={`text-base sm:text-lg font-bold flex items-center gap-2 ${textPrimary}`}>
+                  <Brain className="w-4 h-4 text-indigo-500" />
+                  Minha API de LLM
+                </h2>
+                <p className={`text-xs mt-1 ${textMuted}`}>
+                  Configure sua própria chave de API para usar modelos de sua preferência e economizar em tokens.
+                </p>
+              </div>
+              <LLMConfigPanel />
             </motion.div>
           )}
         </AnimatePresence>
