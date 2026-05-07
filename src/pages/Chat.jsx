@@ -7,7 +7,7 @@ import ChatInput from '@/components/chat/ChatInput';
 import ThinkingIndicator from '@/components/chat/ThinkingIndicator';
 import PasteDataModal from '@/components/chat/PasteDataModal';
 import ModelSelector from '@/components/chat/ModelSelector';
-import { detectModel, getModelById } from '@/lib/modelRouter';
+import { detectModel, getModelById, MODELS } from '@/lib/modelRouter';
 
 const SYSTEM_PROMPT = `Você é Chamsa Isa v4.1, a Estrategista Clínica de Elite e extensão da mente do Dr. Claudio.
 
@@ -84,12 +84,22 @@ export default function Chat() {
     setActiveModel(chosenModel);
 
     try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: promptText,
-        model: chosenModel
-      });
+      const modelMeta = MODELS.find(m => m.id === chosenModel) || MODELS[0];
+      let responseContent;
 
-      const assistantMsg = { role: 'assistant', content: response, timestamp: new Date().toISOString() };
+      if (modelMeta.provider === 'custom') {
+        // Route to Groq via backend function (Llama 3.3 70B)
+        const res = await base44.functions.invoke('callLlama3', { messages: llmMessages });
+        responseContent = res.data.content;
+      } else {
+        // Native InvokeLLM (Claude, GPT)
+        responseContent = await base44.integrations.Core.InvokeLLM({
+          prompt: promptText,
+          model: chosenModel
+        });
+      }
+
+      const assistantMsg = { role: 'assistant', content: responseContent, timestamp: new Date().toISOString() };
       const updatedMessages = [...newMessages, assistantMsg];
       setMessages(updatedMessages);
       updateChatMutation.mutate(updatedMessages);
