@@ -209,10 +209,10 @@ export default function Chat() {
       <LLMUsageBar usageLog={usageLog} />
 
       {/* Model routing bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/50 text-xs">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-border bg-card/50 text-xs">
         <div className="flex items-center gap-2">
           <DriveSourceConfig folderId={driveFolderId} onSave={handleSaveDriveFolder} />
-          <span className="text-muted-foreground/50 font-mono">
+          <span className="text-muted-foreground/50 font-mono hidden sm:inline">
             {manualModel ? '🔒 Modelo fixo' : '🤖 Auto-routing ativo'}
           </span>
         </div>
@@ -220,7 +220,7 @@ export default function Chat() {
           {!manualModel && (
             <button
               onClick={() => setManualModel(activeModel)}
-              className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+              className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 hidden sm:block"
             >
               fixar modelo
             </button>
@@ -228,7 +228,7 @@ export default function Chat() {
           {manualModel && (
             <button
               onClick={() => setManualModel(null)}
-              className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+              className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 hidden sm:block"
             >
               voltar auto
             </button>
@@ -241,7 +241,7 @@ export default function Chat() {
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6">
         <div className="max-w-3xl mx-auto space-y-4">
           {messages.map((msg, i) => (
             <ChatMessage key={i} message={msg} />

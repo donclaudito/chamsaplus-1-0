@@ -61,7 +61,7 @@ export default function AppLayout() {
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar */}
-        <header className="h-14 border-b border-border flex items-center px-4 gap-3 shrink-0 bg-card/80 backdrop-blur-sm">
+        <header className="h-14 border-b border-border flex items-center px-3 sm:px-4 gap-2 sm:gap-3 shrink-0 bg-card/80 backdrop-blur-sm">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
@@ -69,11 +69,11 @@ export default function AppLayout() {
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-xs font-semibold text-muted-foreground tracking-wide">STRATEGIST</span>
+            <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+            <span className="text-xs font-semibold text-muted-foreground tracking-wide hidden sm:block">STRATEGIST</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-1 rounded-md">
+            <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-1 rounded-md hidden sm:block">
               Deep Reasoning ON
             </span>
           </div>

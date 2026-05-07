@@ -104,7 +104,7 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
                 <button
                   onClick={() => { onSelectChat(chat.id); onClose(); }}
                   className={`
-                    flex-1 text-left px-3 py-2 text-xs font-medium truncate
+                    flex-1 text-left px-3 py-2.5 text-xs font-medium truncate
                     ${chat.id === activeChatId ? 'text-primary' : 'text-slate-700'}
                   `}
                 >

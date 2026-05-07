@@ -66,23 +66,23 @@ export default function Biblioteca() {
   );
 
   return (
-    <div className="h-full overflow-y-auto p-6">
+    <div className="h-full overflow-y-auto p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6 sm:mb-8">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-3">
-              <FolderSearch className="w-6 h-6 text-emerald-500" />
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-3">
+              <FolderSearch className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" />
               Biblioteca Clínica
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Base de conhecimento da Chamsa Isa — {documents.length} documentos indexados
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Base de conhecimento — {documents.length} documentos indexados
             </p>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="flex flex-col gap-3 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -90,14 +90,15 @@ export default function Biblioteca() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar documentos..."
               className="pl-9"
+              style={{ fontSize: '16px' }}
             />
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowAdd(true)}>
+            <Button variant="outline" onClick={() => setShowAdd(true)} className="flex-1 sm:flex-none">
               <Plus className="w-4 h-4 mr-2" />
               Nota Manual
             </Button>
-            <Button asChild className="relative">
+            <Button asChild className="relative flex-1 sm:flex-none">
               <label>
                 <Upload className="w-4 h-4 mr-2" />
                 {isUploading ? 'Enviando...' : 'Upload'}

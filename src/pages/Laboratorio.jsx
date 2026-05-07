@@ -76,20 +76,20 @@ export default function Laboratorio() {
     : '';
 
   return (
-    <div className={`h-full overflow-y-auto p-6 transition-colors duration-300 ${containerBg}`}>
+    <div className={`h-full overflow-y-auto p-4 sm:p-6 transition-colors duration-300 ${containerBg}`}>
       <div className={`max-w-4xl mx-auto ${panelOverride}`}>
 
         {/* Header */}
         <motion.div
-          className="mb-8"
+          className="mb-6 sm:mb-8"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className={`text-2xl font-bold flex items-center gap-3 ${textPrimary}`}>
-            <Beaker className="w-6 h-6 text-purple-500" />
+          <h1 className={`text-xl sm:text-2xl font-bold flex items-center gap-3 ${textPrimary}`}>
+            <Beaker className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
             Laboratório IA
           </h1>
-          <p className={`text-sm mt-1 ${textMuted}`}>
+          <p className={`text-xs sm:text-sm mt-1 ${textMuted}`}>
             Monitoramento neural e métricas de performance da Chamsa Isa
           </p>
         </motion.div>
@@ -134,7 +134,7 @@ export default function Laboratorio() {
 
           {/* PAINEL 4 — Métricas */}
           <CollapsiblePanel title="Métricas de Performance" icon={Sparkles} iconColor="text-amber-500" defaultOpen={false}>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
               {metrics.map((m, i) => (
                 <motion.div
                   key={m.label}
