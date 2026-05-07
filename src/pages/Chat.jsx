@@ -7,6 +7,7 @@ import ChatInput from '@/components/chat/ChatInput';
 import ThinkingIndicator from '@/components/chat/ThinkingIndicator';
 import PasteDataModal from '@/components/chat/PasteDataModal';
 import ModelSelector from '@/components/chat/ModelSelector';
+import LLMUsageBar from '@/components/chat/LLMUsageBar.jsx';
 import { detectModel, getModelById, MODELS } from '@/lib/modelRouter';
 
 const SYSTEM_PROMPT = `Você é Chamsa Isa v4.1, a Estrategista Clínica de Elite e extensão da mente do Dr. Claudio.
@@ -29,6 +30,7 @@ export default function Chat() {
   const [showPaste, setShowPaste] = useState(false);
   const [manualModel, setManualModel] = useState(null); // null = auto mode
   const [activeModel, setActiveModel] = useState('claude_sonnet_4_6');
+  const [usageLog, setUsageLog] = useState([]);
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -36,6 +38,7 @@ export default function Chat() {
     if (activeChat?.messages) {
       setMessages(activeChat.messages);
     }
+    setUsageLog([]); // reset usage on session change
   }, [activeChatId, activeChat]);
 
   useEffect(() => {
@@ -87,17 +90,28 @@ export default function Chat() {
       const modelMeta = MODELS.find(m => m.id === chosenModel) || MODELS[0];
       let responseContent;
 
+      let inputTokens = 0;
+      let outputTokens = 0;
+
       if (modelMeta.provider === 'custom') {
         // Route to Groq via backend function (Llama 3.3 70B)
         const res = await base44.functions.invoke('callLlama3', { messages: llmMessages });
         responseContent = res.data.content;
+        inputTokens = res.data.usage?.prompt_tokens || Math.round(promptText.length / 4);
+        outputTokens = res.data.usage?.completion_tokens || Math.round(responseContent.length / 4);
       } else {
         // Native InvokeLLM (Claude, GPT)
         responseContent = await base44.integrations.Core.InvokeLLM({
           prompt: promptText,
           model: chosenModel
         });
+        // Estimate tokens from character count (aprox 4 chars/token)
+        inputTokens = Math.round(promptText.length / 4);
+        outputTokens = Math.round(responseContent.length / 4);
       }
+
+      // Track usage
+      setUsageLog(prev => [...prev, { modelId: chosenModel, inputTokens, outputTokens }]);
 
       const assistantMsg = { role: 'assistant', content: responseContent, timestamp: new Date().toISOString() };
       const updatedMessages = [...newMessages, assistantMsg];
@@ -138,6 +152,8 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-full">
+      <LLMUsageBar usageLog={usageLog} />
+
       {/* Model routing bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/50 text-xs">
         <span className="text-muted-foreground/50 font-mono">
