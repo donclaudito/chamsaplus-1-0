@@ -33,6 +33,7 @@ export default function Chat() {
   const [activeModel, setActiveModel] = useState('claude_sonnet_4_6');
   const [usageLog, setUsageLog] = useState([]);
   const [driveFolderId, setDriveFolderId] = useState(() => localStorage.getItem('chamsa_drive_folder') || '1eWosMBtk9N5tICSKLETbeECw9qlSpZed');
+  const [activeLLMBadge, setActiveLLMBadge] = useState(null); // { label, modelId, provider }
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -139,23 +140,35 @@ export default function Chat() {
 
       // Check if user has their own active LLM config
       let userHasCustomLLM = false;
+      let activeUserConfig = null;
       try {
         const userConfigs = await base44.entities.UserLLMConfig.filter({ is_active: true });
-        userHasCustomLLM = userConfigs?.length > 0;
+        if (userConfigs?.length > 0) {
+          userHasCustomLLM = true;
+          activeUserConfig = userConfigs[0];
+        }
       } catch (_) {}
 
-      if (userHasCustomLLM) {
+      if (userHasCustomLLM && activeUserConfig) {
         // Use user's own API key via backend function
         const res = await base44.functions.invoke('invokeCustomLLM', { messages: llmMessages });
         responseContent = res.data.content;
         inputTokens = res.data.usage?.prompt_tokens || Math.round(promptText.length / 4);
         outputTokens = res.data.usage?.completion_tokens || Math.round(responseContent.length / 4);
+        // Set badge for custom LLM
+        const PROVIDER_LABELS = { openai: 'OpenAI', anthropic: 'Anthropic', groq: 'Groq', google: 'Google AI', mistral: 'Mistral AI', together: 'Together AI' };
+        setActiveLLMBadge({
+          label: PROVIDER_LABELS[activeUserConfig.provider] || activeUserConfig.provider,
+          modelId: activeUserConfig.model_id,
+          provider: activeUserConfig.provider,
+        });
       } else if (modelMeta.provider === 'custom') {
         // Route to Groq via backend function (Llama 3.3 70B)
         const res = await base44.functions.invoke('callLlama3', { messages: llmMessages });
         responseContent = res.data.content;
         inputTokens = res.data.usage?.prompt_tokens || Math.round(promptText.length / 4);
         outputTokens = res.data.usage?.completion_tokens || Math.round(responseContent.length / 4);
+        setActiveLLMBadge(null);
       } else {
         // Native InvokeLLM (Claude, GPT)
         responseContent = await base44.integrations.Core.InvokeLLM({
@@ -164,6 +177,7 @@ export default function Chat() {
         });
         inputTokens = Math.round(promptText.length / 4);
         outputTokens = Math.round(responseContent.length / 4);
+        setActiveLLMBadge(null); // modelo nativo, sem badge custom
       }
 
       // Track usage (in-session)
@@ -238,6 +252,12 @@ export default function Chat() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {activeLLMBadge && (
+            <span className="flex items-center gap-1.5 bg-indigo-500/10 text-indigo-500 border border-indigo-400/30 px-2 py-0.5 rounded-full text-[10px] font-semibold animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block" />
+              {activeLLMBadge.label} · {activeLLMBadge.modelId}
+            </span>
+          )}
           {!manualModel && (
             <button
               onClick={() => setManualModel(activeModel)}
