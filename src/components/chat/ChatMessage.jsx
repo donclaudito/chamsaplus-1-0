@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Bot, User, Copy, Check, FileDown } from 'lucide-react';
+import { Bot, User, Copy, Check, FileDown, Printer } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
+import { jsPDF } from 'jspdf';
 
 export default function ChatMessage({ message }) {
   const [copied, setCopied] = useState(false);
@@ -12,6 +13,44 @@ export default function ChatMessage({ message }) {
     navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handlePrintPDF = () => {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    const maxWidth = pageWidth - margin * 2;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('Chamsa Isa — Resposta Clínica', margin, 20);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    const ts = message.timestamp
+      ? new Date(message.timestamp).toLocaleString('pt-BR')
+      : new Date().toLocaleString('pt-BR');
+    doc.text(ts, margin, 27);
+
+    doc.setDrawColor(200);
+    doc.line(margin, 30, pageWidth - margin, 30);
+
+    doc.setTextColor(30);
+    doc.setFontSize(10);
+    // Strip markdown syntax for clean PDF text
+    const plain = message.content
+      .replace(/#{1,6}\s?/g, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/`{1,3}(.*?)`{1,3}/gs, '$1')
+      .replace(/>\s?/g, '')
+      .replace(/---+/g, '');
+
+    const lines = doc.splitTextToSize(plain, maxWidth);
+    doc.text(lines, margin, 38);
+
+    doc.save(`chamsa-resposta-${Date.now()}.pdf`);
   };
 
   if (isData) {
@@ -62,8 +101,11 @@ export default function ChatMessage({ message }) {
         {/* Actions */}
         {isAssistant && (
           <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={handleCopy} className="p-1 hover:bg-muted rounded-md transition-colors">
+            <button onClick={handleCopy} className="p-1 hover:bg-muted rounded-md transition-colors" title="Copiar">
               {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
+            </button>
+            <button onClick={handlePrintPDF} className="p-1 hover:bg-muted rounded-md transition-colors" title="Exportar PDF">
+              <Printer className="w-3 h-3 text-muted-foreground" />
             </button>
           </div>
         )}
