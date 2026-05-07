@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 
 export default function DriveSourceConfig({ folderId, onSave }) {
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(folderId || '');
+  const DEFAULT_FOLDER_ID = '1eWosMBtk9N5tICSKLETbeECw9qlSpZed';
+  const [value, setValue] = useState(folderId || DEFAULT_FOLDER_ID);
 
   const handleSave = () => {
     onSave(value.trim());

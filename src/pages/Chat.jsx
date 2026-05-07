@@ -32,7 +32,7 @@ export default function Chat() {
   const [manualModel, setManualModel] = useState(null); // null = auto mode
   const [activeModel, setActiveModel] = useState('claude_sonnet_4_6');
   const [usageLog, setUsageLog] = useState([]);
-  const [driveFolderId, setDriveFolderId] = useState(() => localStorage.getItem('chamsa_drive_folder') || '');
+  const [driveFolderId, setDriveFolderId] = useState(() => localStorage.getItem('chamsa_drive_folder') || '1eWosMBtk9N5tICSKLETbeECw9qlSpZed');
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
 
