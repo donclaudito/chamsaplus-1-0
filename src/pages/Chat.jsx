@@ -8,6 +8,7 @@ import ThinkingIndicator from '@/components/chat/ThinkingIndicator';
 import PasteDataModal from '@/components/chat/PasteDataModal';
 import ModelSelector from '@/components/chat/ModelSelector';
 import LLMUsageBar from '@/components/chat/LLMUsageBar.jsx';
+import DriveSourceConfig from '@/components/chat/DriveSourceConfig';
 import { detectModel, getModelById, MODELS } from '@/lib/modelRouter';
 
 const SYSTEM_PROMPT = `Você é Chamsa Isa v4.1, a Estrategista Clínica de Elite e extensão da mente do Dr. Claudio.
@@ -31,6 +32,7 @@ export default function Chat() {
   const [manualModel, setManualModel] = useState(null); // null = auto mode
   const [activeModel, setActiveModel] = useState('claude_sonnet_4_6');
   const [usageLog, setUsageLog] = useState([]);
+  const [driveFolderId, setDriveFolderId] = useState(() => localStorage.getItem('chamsa_drive_folder') || '');
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -52,6 +54,11 @@ export default function Chat() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['chatSessions'] }),
   });
 
+  const handleSaveDriveFolder = (id) => {
+    setDriveFolderId(id);
+    localStorage.setItem('chamsa_drive_folder', id);
+  };
+
   const sendMessage = async (text) => {
     if (!activeChatId || isLoading) return;
 
@@ -70,9 +77,24 @@ export default function Chat() {
       .map(m => `[DADO CLÍNICO: ${m.title}]\n${m.content}`)
       .join('\n\n');
 
+    // Fetch Drive folder files in real-time
+    let driveContext = '';
+    if (driveFolderId) {
+      try {
+        const driveRes = await base44.functions.invoke('readDriveFolder', { folder_id: driveFolderId });
+        const driveFiles = driveRes.data?.files || [];
+        if (driveFiles.length > 0) {
+          driveContext = '\n\nCONTEXTO DO GOOGLE DRIVE (leitura em tempo real):\n' +
+            driveFiles.map(f => `[ARQUIVO: ${f.name}]\n${f.content}`).join('\n\n---\n\n');
+        }
+      } catch (_) {
+        // Drive unavailable — proceed without context
+      }
+    }
+
     const fullPrompt = dataBlocks
-      ? `${SYSTEM_PROMPT}\n\nDADOS CLÍNICOS INDEXADOS:\n${dataBlocks}`
-      : SYSTEM_PROMPT;
+      ? `${SYSTEM_PROMPT}\n\nDADOS CLÍNICOS INDEXADOS:\n${dataBlocks}${driveContext}`
+      : `${SYSTEM_PROMPT}${driveContext}`;
 
     const llmMessages = [
       { role: 'system', content: fullPrompt },
@@ -175,9 +197,12 @@ export default function Chat() {
 
       {/* Model routing bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/50 text-xs">
-        <span className="text-muted-foreground/50 font-mono">
-          {manualModel ? '🔒 Modelo fixo' : '🤖 Auto-routing ativo'}
-        </span>
+        <div className="flex items-center gap-2">
+          <DriveSourceConfig folderId={driveFolderId} onSave={handleSaveDriveFolder} />
+          <span className="text-muted-foreground/50 font-mono">
+            {manualModel ? '🔒 Modelo fixo' : '🤖 Auto-routing ativo'}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           {!manualModel && (
             <button
