@@ -1,0 +1,43 @@
+{
+  "name": "CustomSkill",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Nome identificador da Skill"
+    },
+    "description": {
+      "type": "string",
+      "description": "Breve descri\u00e7\u00e3o do prop\u00f3sito da skill"
+    },
+    "prompt_template": {
+      "type": "string",
+      "description": "Template de prompt ou diretivas que definem a skill"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "prompt_engineering",
+        "context_injection",
+        "tool_definition",
+        "model_config",
+        "other"
+      ],
+      "default": "prompt_engineering",
+      "description": "Categoria da skill"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Indica se a skill est\u00e1 ativa"
+    },
+    "icon": {
+      "type": "string",
+      "description": "Emoji ou \u00edcone representativo"
+    }
+  },
+  "required": [
+    "title",
+    "prompt_template"
+  ]
+}

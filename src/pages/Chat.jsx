@@ -77,6 +77,19 @@ export default function Chat() {
       .map(m => `[DADO CLÍNICO: ${m.title}]\n${m.content}`)
       .join('\n\n');
 
+    // Fetch active custom skills for prompt injection
+    let skillsContext = '';
+    try {
+      const allSkills = await base44.entities.CustomSkill.list('-created_date', 50);
+      const activeSkills = allSkills.filter(s => s.is_active);
+      if (activeSkills.length > 0) {
+        skillsContext = '\n\n--- SKILLS PERSONALIZADAS ATIVAS ---\n' +
+          activeSkills.map(s => `[SKILL: ${s.title}]\n${s.prompt_template}`).join('\n\n');
+      }
+    } catch (_) {
+      // Skills unavailable — proceed without
+    }
+
     // Fetch Drive folder files in real-time
     let driveContext = '';
     if (driveFolderId) {
@@ -93,8 +106,8 @@ export default function Chat() {
     }
 
     const fullPrompt = dataBlocks
-      ? `${SYSTEM_PROMPT}\n\nDADOS CLÍNICOS INDEXADOS:\n${dataBlocks}${driveContext}`
-      : `${SYSTEM_PROMPT}${driveContext}`;
+      ? `${SYSTEM_PROMPT}${skillsContext}\n\nDADOS CLÍNICOS INDEXADOS:\n${dataBlocks}${driveContext}`
+      : `${SYSTEM_PROMPT}${skillsContext}${driveContext}`;
 
     const llmMessages = [
       { role: 'system', content: fullPrompt },

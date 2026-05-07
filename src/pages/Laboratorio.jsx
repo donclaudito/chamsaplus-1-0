@@ -6,6 +6,7 @@ import LLMConsumoDashboard from '@/components/laboratorio/LLMConsumoDashboard';
 import CollapsiblePanel from '@/components/laboratorio/CollapsiblePanel';
 import ThemeSelector from '@/components/laboratorio/ThemeSelector';
 import ComponentShowcase from '@/components/laboratorio/ComponentShowcase';
+import SkillsPanel from '@/components/laboratorio/SkillsPanel';
 
 const skills = [
   { label: 'Deep Reasoning', desc: 'Protocolo CoT (Chain-of-Thought)', icon: Brain, color: 'text-purple-600', bg: 'bg-purple-500/10' },
@@ -116,6 +117,14 @@ export default function Laboratorio() {
           <CollapsiblePanel title="Biblioteca de Componentes" icon={LayoutGrid} iconColor="text-blue-500" badge="UI kit" defaultOpen={true}>
             <p className={`text-xs mb-4 ${textMuted}`}>Pré-visualização e código dos componentes reutilizáveis do sistema.</p>
             <ComponentShowcase />
+          </CollapsiblePanel>
+
+          {/* PAINEL — Skills da Chamsa Isa */}
+          <CollapsiblePanel title="Skills da Chamsa Isa" icon={Zap} iconColor="text-yellow-500" badge="injeção de prompt" defaultOpen={true}>
+            <p className={`text-xs mb-4 ${textMuted}`}>
+              Crie e gerencie diretivas personalizadas que são injetadas automaticamente no system prompt da Chamsa em cada sessão de chat.
+            </p>
+            <SkillsPanel />
           </CollapsiblePanel>
 
           {/* PAINEL 3 — Consumo LLM */}
