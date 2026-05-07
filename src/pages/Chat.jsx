@@ -6,6 +6,8 @@ import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
 import ThinkingIndicator from '@/components/chat/ThinkingIndicator';
 import PasteDataModal from '@/components/chat/PasteDataModal';
+import ModelSelector from '@/components/chat/ModelSelector';
+import { detectModel, getModelById } from '@/lib/modelRouter';
 
 const SYSTEM_PROMPT = `Você é Chamsa Isa v4.1, a Estrategista Clínica de Elite e extensão da mente do Dr. Claudio.
 
@@ -25,6 +27,8 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showPaste, setShowPaste] = useState(false);
+  const [manualModel, setManualModel] = useState(null); // null = auto mode
+  const [activeModel, setActiveModel] = useState('claude_sonnet_4_6');
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -74,10 +78,15 @@ export default function Chat() {
 
     const promptText = llmMessages.map(m => `${m.role}: ${m.content}`).join('\n');
 
+    // Model routing: manual override or auto-detect
+    const hasDataBlocks = newMessages.some(m => m.role === 'data-block');
+    const chosenModel = manualModel || detectModel(text, hasDataBlocks);
+    setActiveModel(chosenModel);
+
     try {
       const response = await base44.integrations.Core.InvokeLLM({
         prompt: promptText,
-        model: 'claude_sonnet_4_6'
+        model: chosenModel
       });
 
       const assistantMsg = { role: 'assistant', content: response, timestamp: new Date().toISOString() };
@@ -115,8 +124,40 @@ export default function Chat() {
     );
   }
 
+  const modelForDisplay = manualModel || activeModel;
+
   return (
     <div className="flex flex-col h-full">
+      {/* Model routing bar */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/50 text-xs">
+        <span className="text-muted-foreground/50 font-mono">
+          {manualModel ? '🔒 Modelo fixo' : '🤖 Auto-routing ativo'}
+        </span>
+        <div className="flex items-center gap-2">
+          {!manualModel && (
+            <button
+              onClick={() => setManualModel(activeModel)}
+              className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              fixar modelo
+            </button>
+          )}
+          {manualModel && (
+            <button
+              onClick={() => setManualModel(null)}
+              className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              voltar auto
+            </button>
+          )}
+          <ModelSelector
+            selectedModel={modelForDisplay}
+            onChange={(id) => setManualModel(id)}
+            autoMode={!manualModel}
+          />
+        </div>
+      </div>
+
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-3xl mx-auto space-y-4">
           {messages.map((msg, i) => (
