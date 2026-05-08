@@ -49,8 +49,12 @@ export default function Chat() {
     if (activeChat?.messages) {
       setMessages(activeChat.messages);
     }
-    setUsageLog([]); // reset usage on session change
-  }, [activeChatId, activeChat]);
+    setUsageLog([]);
+    // Reset canvas state when switching sessions
+    setCanvasContent(null);
+    setCanvasTitle(null);
+    setCanvasMode(false);
+  }, [activeChatId]);
 
   // Show badge immediately based on active custom LLM config
   useEffect(() => {
