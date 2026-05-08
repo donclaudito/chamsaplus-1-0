@@ -85,6 +85,24 @@ async function callGoogle(apiKey, messages, modelId, maxTokens, temperature) {
   };
 }
 
+function parseResponse(raw) {
+  let content = raw;
+  let canvas = null;
+  let searchPrompt = null;
+  const canvasMatch = content.match(/<CANVAS[^>]*title\s*=\s*["'\u201c\u201d]([^"'\u201c\u201d\n]*)["'\u201c\u201d][^>]*>([\s\S]*?)<\/CANVAS>/i);
+  if (canvasMatch) {
+    canvas = { title: canvasMatch[1].trim(), content: canvasMatch[2].trim() };
+    content = content.replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '').trim();
+    if (!content) content = `📄 O documento **"${canvas.title}"** foi gerado e está disponível no painel lateral.`;
+  }
+  const searchMatch = content.match(/<SEARCH_PROMPT>([\s\S]*?)<\/SEARCH_PROMPT>/);
+  if (searchMatch) {
+    searchPrompt = searchMatch[1].trim();
+    content = content.replace(/<SEARCH_PROMPT>[\s\S]*?<\/SEARCH_PROMPT>/g, '').trim();
+  }
+  return { content, canvas, searchPrompt };
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -116,8 +134,9 @@ Deno.serve(async (req) => {
       result = await callOpenAICompatible(baseUrl, apiKey, messages, modelId, maxTokens, temperature);
     }
 
+    const parsed = parseResponse(result.content);
     return Response.json({
-      content: result.content,
+      ...parsed,
       usage: { prompt_tokens: result.input_tokens, completion_tokens: result.output_tokens },
       provider,
       model: modelId,

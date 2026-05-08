@@ -174,46 +174,45 @@ export default function Chat() {
         if (userConfigs?.length > 0) activeUserConfig = userConfigs[0];
       } catch (_) {}
 
+      let parsedCanvas = null;
+      let extractedSearchPrompt = null;
+
       if (activeUserConfig) {
         const res = await base44.functions.invoke('invokeCustomLLM', { messages: llmMessages });
         responseContent = res.data.content;
+        parsedCanvas = res.data.canvas || null;
+        extractedSearchPrompt = res.data.searchPrompt || null;
         inputTokens = res.data.usage?.prompt_tokens || Math.round(promptText.length / 4);
         outputTokens = res.data.usage?.completion_tokens || Math.round(responseContent.length / 4);
         updateBadgeFromConfig(activeUserConfig);
       } else if (modelMeta.provider === 'custom') {
         const res = await base44.functions.invoke('callLlama3', { messages: llmMessages });
         responseContent = res.data.content;
+        parsedCanvas = res.data.canvas || null;
+        extractedSearchPrompt = res.data.searchPrompt || null;
         inputTokens = res.data.usage?.prompt_tokens || Math.round(promptText.length / 4);
         outputTokens = res.data.usage?.completion_tokens || Math.round(responseContent.length / 4);
         updateBadgeFromConfig(null);
       } else {
-        responseContent = await base44.integrations.Core.InvokeLLM({
-          prompt: promptText,
-          model: chosenModel,
-        });
+        // Base44 InvokeLLM — parse tags on frontend (no backend wrapper)
+        const raw = await base44.integrations.Core.InvokeLLM({ prompt: promptText, model: chosenModel });
+        const canvasMatch = raw.match(/<CANVAS[^>]*title\s*=\s*["'\u201c\u201d]([^"'\u201c\u201d\n]*)["'\u201c\u201d][^>]*>([\s\S]*?)<\/CANVAS>/i);
+        responseContent = raw.replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '').trim();
+        if (canvasMatch) parsedCanvas = { title: canvasMatch[1].trim(), content: canvasMatch[2].trim() };
+        const searchMatch = responseContent.match(/<SEARCH_PROMPT>([\s\S]*?)<\/SEARCH_PROMPT>/);
+        if (searchMatch) {
+          extractedSearchPrompt = searchMatch[1].trim();
+          responseContent = responseContent.replace(/<SEARCH_PROMPT>[\s\S]*?<\/SEARCH_PROMPT>/g, '').trim();
+        }
+        if (canvasMatch && !responseContent) responseContent = `📄 O documento **"${parsedCanvas.title}"** foi gerado e está disponível no painel lateral.`;
         inputTokens = Math.round(promptText.length / 4);
         outputTokens = Math.round(responseContent.length / 4);
         updateBadgeFromConfig(null);
       }
 
-      // Extract canvas
-      const canvasMatch = responseContent.match(/<CANVAS[^>]*title\s*=\s*["'\u201c\u201d]([^"'\u201c\u201d\n]*)["'\u201c\u201d][^>]*>([\s\S]*?)<\/CANVAS>/i);
-      responseContent = responseContent.replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '').trim();
-
-      if (canvasMatch && canvasMode) {
-        openCanvas(canvasMatch[1].trim(), canvasMatch[2].trim());
-        if (responseContent === '') {
-          const docTitle = canvasMatch[1].trim() || 'Canvas';
-          responseContent = `📄 O documento **"${docTitle}"** foi gerado e está disponível no painel lateral.`;
-        }
-      }
-
-      // Extract search suggestion
-      let extractedSearchPrompt = null;
-      const searchMatch = responseContent.match(/<SEARCH_PROMPT>([\s\S]*?)<\/SEARCH_PROMPT>/);
-      if (searchMatch?.[1]) {
-        extractedSearchPrompt = searchMatch[1].trim();
-        responseContent = responseContent.replace(/<SEARCH_PROMPT>[\s\S]*?<\/SEARCH_PROMPT>/g, '').trim();
+      // Open canvas if content present and canvas mode active
+      if (parsedCanvas && canvasMode) {
+        openCanvas(parsedCanvas.title, parsedCanvas.content);
       }
 
       // Track usage
