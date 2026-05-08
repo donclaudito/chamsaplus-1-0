@@ -3,7 +3,6 @@ import { Bot, User, Copy, Check, FileDown, Printer, ThumbsUp, ThumbsDown, MoreHo
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { jsPDF } from 'jspdf';
 import SearchSuggestion from './SearchSuggestion';
 
 export default function ChatMessage({ message, onRetryWithoutCanvas }) {
@@ -19,41 +18,52 @@ export default function ChatMessage({ message, onRetryWithoutCanvas }) {
   };
 
   const handlePrintPDF = () => {
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
-    const maxWidth = pageWidth - margin * 2;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.text('Chamsa Isa — Resposta Clínica', margin, 20);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(120);
     const ts = message.timestamp
       ? new Date(message.timestamp).toLocaleString('pt-BR')
       : new Date().toLocaleString('pt-BR');
-    doc.text(ts, margin, 27);
 
-    doc.setDrawColor(200);
-    doc.line(margin, 30, pageWidth - margin, 30);
+    // Captura o HTML já renderizado da mensagem
+    const msgEl = document.getElementById(`chat-msg-${message.timestamp}`);
+    const renderedHTML = msgEl ? msgEl.innerHTML : `<pre style="white-space:pre-wrap">${message.content}</pre>`;
 
-    doc.setTextColor(30);
-    doc.setFontSize(10);
-    // Strip markdown syntax for clean PDF text
-    const plain = message.content
-      .replace(/#{1,6}\s?/g, '')
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\*(.*?)\*/g, '$1')
-      .replace(/`{1,3}(.*?)`{1,3}/gs, '$1')
-      .replace(/>\s?/g, '')
-      .replace(/---+/g, '');
-
-    const lines = doc.splitTextToSize(plain, maxWidth);
-    doc.text(lines, margin, 38);
-
-    doc.save(`chamsa-resposta-${Date.now()}.pdf`);
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><title>Chamsa — Resposta Clínica</title>
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; padding: 3rem; line-height: 1.8; max-width: 820px; margin: auto; color: #1a1a1a; font-size: 14px; }
+        .header { margin-bottom: 1.5em; border-bottom: 2px solid #e5e7eb; padding-bottom: 1em; }
+        .header h1 { font-size: 1.4rem; font-weight: 700; }
+        .header p { font-size: 0.82rem; color: #6b7280; margin-top: 0.25em; }
+        h1 { font-size: 1.5rem; font-weight: 700; margin: 1em 0 0.4em; }
+        h2 { font-size: 1.2rem; font-weight: 700; margin: 1.2em 0 0.3em; }
+        h3 { font-size: 1rem; font-weight: 600; margin: 1em 0 0.25em; }
+        p { margin-bottom: 0.75em; }
+        ul, ol { margin-left: 1.5em; margin-bottom: 0.75em; }
+        li { margin-bottom: 0.25em; }
+        strong { font-weight: 700; }
+        em { font-style: italic; }
+        code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; }
+        pre { background: #f3f4f6; padding: 1em; border-radius: 8px; overflow-x: auto; margin-bottom: 0.75em; }
+        blockquote { border-left: 3px solid #6366f1; padding-left: 1em; color: #555; margin: 1em 0; font-style: italic; }
+        .table-wrapper { width: 100%; overflow-x: auto; margin-bottom: 1em; }
+        table { border-collapse: collapse; width: 100%; font-size: 0.88em; }
+        thead tr { background: #f3f4f6; border-bottom: 2px solid #d1d5db; }
+        th { padding: 0.5em 1em; text-align: left; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.04em; white-space: nowrap; }
+        td { padding: 0.45em 1em; border-bottom: 1px solid #e5e7eb; vertical-align: top; line-height: 1.5; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:nth-child(even) { background: #fafafa; }
+        @media print { body { padding: 1.5rem; } }
+      </style>
+    </head><body>
+      <div class="header">
+        <h1>Chamsa Isa — Resposta Clínica</h1>
+        <p>${ts}</p>
+      </div>
+      ${renderedHTML}
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => { win.print(); }, 400);
   };
 
   if (isData) {
@@ -94,7 +104,7 @@ export default function ChatMessage({ message, onRetryWithoutCanvas }) {
         }
       `}>
         {isAssistant ? (
-          <div className="chamsa-prose text-sm">
+          <div id={`chat-msg-${message.timestamp}`} className="chamsa-prose text-sm">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
