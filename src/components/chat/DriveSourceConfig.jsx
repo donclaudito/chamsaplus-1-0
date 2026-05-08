@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { FolderOpen, X, Check, HardDrive } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { DEFAULT_DRIVE_FOLDER_ID } from '@/lib/appConfig';
 
 export default function DriveSourceConfig({ folderId, onSave }) {
   const [editing, setEditing] = useState(false);
-  const DEFAULT_FOLDER_ID = '1eWosMBtk9N5tICSKLETbeECw9qlSpZed';
-  const [value, setValue] = useState(folderId || DEFAULT_FOLDER_ID);
+  const [value, setValue] = useState(folderId || DEFAULT_DRIVE_FOLDER_ID);
 
   const handleSave = () => {
     onSave(value.trim());

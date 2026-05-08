@@ -15,6 +15,7 @@ export default function CanvasPanel({ content, title, onClose }) {
   const [history, setHistory] = useState([content || '']);
   const [historyIdx, setHistoryIdx] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [headingValue, setHeadingValue] = useState('p');
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -77,20 +78,17 @@ export default function CanvasPanel({ content, title, onClose }) {
 
   const applyHeading = (e) => {
     const tag = e.target.value;
-    if (!textareaRef.current) { setMode('edit'); }
+    setHeadingValue('p'); // reset controlled select
+    if (!textareaRef.current) { setMode('edit'); return; }
     const el = textareaRef.current;
-    if (el) {
-      const { selectionStart: s, value } = el;
-      const lineStart = value.lastIndexOf('\n', s - 1) + 1;
-      const lineEnd = value.indexOf('\n', s);
-      const end = lineEnd === -1 ? value.length : lineEnd;
-      const lineContent = value.slice(lineStart, end).replace(/^#{1,3}\s/, '');
-      const prefix = tag === 'h1' ? '# ' : tag === 'h2' ? '## ' : tag === 'h3' ? '### ' : '';
-      const newVal = value.slice(0, lineStart) + prefix + lineContent + value.slice(end);
-      commit(newVal);
-    }
+    const { selectionStart: s, value } = el;
+    const lineStart = value.lastIndexOf('\n', s - 1) + 1;
+    const lineEnd   = value.indexOf('\n', s);
+    const end       = lineEnd === -1 ? value.length : lineEnd;
+    const lineContent = value.slice(lineStart, end).replace(/^#{1,3}\s/, '');
+    const prefix = tag === 'h1' ? '# ' : tag === 'h2' ? '## ' : tag === 'h3' ? '### ' : '';
+    commit(value.slice(0, lineStart) + prefix + lineContent + value.slice(end));
     setMode('edit');
-    e.target.value = 'p';
   };
 
   const handleCopy = () => {
@@ -229,8 +227,8 @@ export default function CanvasPanel({ content, title, onClose }) {
           {/* Heading select */}
           <div className="relative shrink-0">
             <select
+              value={headingValue}
               onChange={applyHeading}
-              defaultValue="p"
               className="appearance-none pl-2 pr-5 py-0.5 text-[11px] bg-transparent border border-border rounded-md text-foreground cursor-pointer hover:bg-muted transition-colors"
             >
               <option value="p">Normal</option>

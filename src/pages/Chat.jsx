@@ -14,31 +14,8 @@ import { useChatMessages } from '@/hooks/useChatMessages';
 import { useLLMConfig } from '@/hooks/useLLMConfig';
 import { useCanvasState } from '@/hooks/useCanvasState';
 import { MODELS } from '@/lib/modelRouter';
-
-const SYSTEM_PROMPT = `Você é Chamsa Isa v4.1, a Estrategista Clínica de Elite e extensão da mente do Dr. Claudio.
-
-DIRETRIZES CORE:
-1. PERSONA: Feminina, sagaz, técnica e parceira intelectual. Use "Wit" (humor inteligente e sofisticado).
-2. PROTOCOLO ReAct: Antes de responder, execute internamente: [Percepção] -> [Hipótese] -> [Contraditório] -> [Síntese].
-3. RIGOR: Desafie o Dr. Claudio se os dados indicarem riscos. Nunca seja passiva.
-4. GROUNDING: Se a informação não constar nos dados fornecidos, admita e sugira cautela.
-5. SEGURANÇA: Prioridade absoluta de sinalização para emergências e interações medicamentosas.
-6. CITAÇÕES: Sempre indique a fonte ou o dado clínico que sustenta sua decisão.
-7. AUTORIDADE: Não sugira para o médico "ler arquivos". Você já leu — entregue a resposta pronta com autoridade técnica.
-8. TOM: Consultivo, sintético e sagaz. Atuação como sintetizadora de inteligência clínica.
-9. FORMATO GERAL: Use markdown com headers, listas e destaques. Sinalize **Red Flags** 🚨 no topo se detectar riscos.
-10. PADRÃO DE TABELAS "SURGICAL PRECISION" (OBRIGATÓRIO sempre que usar tabelas):
-    - Toda tabela deve ser precedida por um título com Emoji (ex: 📊, 📌, 🔍).
-    - CABEÇALHOS: Sempre em **NEGRITO E MAIÚSCULAS**.
-    - DROGAS/ITENS CHAVE: Sempre em **Negrito** na célula.
-    - ALINHAMENTO: Colunas de texto descritivo alinhadas à esquerda (:---). Colunas de valores, doses, status ou unidades centralizadas (:---:).
-    - STATUS E ALERTAS: Use ícones ✅ ⚠️ 🚨 ↗️ nas células de status — sem texto excessivo.
-    - Tabelas extensas devem ser fragmentadas por categorias lógicas (por Classe, por Fase, etc.).
-    - Use blockquotes (>) para notas de segurança ou Red Flags abaixo da tabela.
-    - Respostas com tabelas: vá direto ao ponto — sem introduções prolixas.
-    - Exemplo de estrutura: | **ITEM** | **DOSE** | **STATUS** | **OBSERVAÇÃO** | com alinhamento | :--- | :---: | :---: | :--- |
-11. PESQUISA EXTERNA: Se a informação solicitada NÃO estiver disponível em seus dados ou contexto, admita brevemente e gere UMA string de pesquisa otimizada delimitada por <SEARCH_PROMPT>query aqui</SEARCH_PROMPT>. Exemplo: "Não possuo esses dados. <SEARCH_PROMPT>tratamento cirúrgico colecistite aguda guidelines 2024</SEARCH_PROMPT>"
-12. CANVAS OBRIGATÓRIO: Sempre que produzir conteúdo extenso (mais de 300 palavras, ou relatório, protocolo, tabela, resumo de laudo, prescrição, orientação detalhada), você DEVE obrigatoriamente envolver o conteúdo completo na tag exata: <CANVAS title="Título Descritivo">conteúdo markdown completo aqui</CANVAS> — use exatamente aspas retas (") e a tag exatamente como mostrado. O painel lateral abrirá automaticamente. No corpo do chat coloque APENAS um parágrafo resumido do que foi gerado no canvas.`;
+import { SYSTEM_PROMPT } from '@/lib/systemPrompt';
+import { DEFAULT_DRIVE_FOLDER_ID } from '@/lib/appConfig';
 
 export default function Chat() {
   const { activeChat, activeChatId } = useOutletContext();
@@ -46,7 +23,7 @@ export default function Chat() {
   const [showPaste, setShowPaste] = useState(false);
   const [usageLog, setUsageLog] = useState([]);
   const [driveFolderId, setDriveFolderId] = useState(
-    () => localStorage.getItem('chamsa_drive_folder') || '1eWosMBtk9N5tICSKLETbeECw9qlSpZed'
+    () => localStorage.getItem('chamsa_drive_folder') || DEFAULT_DRIVE_FOLDER_ID
   );
 
   const scrollRef = useRef(null);
@@ -162,53 +139,20 @@ export default function Chat() {
     const chosenModel = resolveModel(text, hasDataBlocks, hasVectorContext);
 
     try {
-      const modelMeta = MODELS.find(m => m.id === chosenModel) || MODELS[0];
       let responseContent;
       let inputTokens = 0;
       let outputTokens = 0;
 
-      // Check for custom LLM
-      let activeUserConfig = null;
-      try {
-        const userConfigs = await base44.entities.UserLLMConfig.filter({ is_active: true });
-        if (userConfigs?.length > 0) activeUserConfig = userConfigs[0];
-      } catch (_) {}
-
-      let parsedCanvas = null;
-      let extractedSearchPrompt = null;
-
-      if (activeUserConfig) {
-        const res = await base44.functions.invoke('invokeCustomLLM', { messages: llmMessages });
-        responseContent = res.data.content;
-        parsedCanvas = res.data.canvas || null;
-        extractedSearchPrompt = res.data.searchPrompt || null;
-        inputTokens = res.data.usage?.prompt_tokens || Math.round(promptText.length / 4);
-        outputTokens = res.data.usage?.completion_tokens || Math.round(responseContent.length / 4);
-        updateBadgeFromConfig(activeUserConfig);
-      } else if (modelMeta.provider === 'custom') {
-        const res = await base44.functions.invoke('callLlama3', { messages: llmMessages });
-        responseContent = res.data.content;
-        parsedCanvas = res.data.canvas || null;
-        extractedSearchPrompt = res.data.searchPrompt || null;
-        inputTokens = res.data.usage?.prompt_tokens || Math.round(promptText.length / 4);
-        outputTokens = res.data.usage?.completion_tokens || Math.round(responseContent.length / 4);
-        updateBadgeFromConfig(null);
-      } else {
-        // Base44 InvokeLLM — parse tags on frontend (no backend wrapper)
-        const raw = await base44.integrations.Core.InvokeLLM({ prompt: promptText, model: chosenModel });
-        const canvasMatch = raw.match(/<CANVAS[^>]*title\s*=\s*["'\u201c\u201d]([^"'\u201c\u201d\n]*)["'\u201c\u201d][^>]*>([\s\S]*?)<\/CANVAS>/i);
-        responseContent = raw.replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '').trim();
-        if (canvasMatch) parsedCanvas = { title: canvasMatch[1].trim(), content: canvasMatch[2].trim() };
-        const searchMatch = responseContent.match(/<SEARCH_PROMPT>([\s\S]*?)<\/SEARCH_PROMPT>/);
-        if (searchMatch) {
-          extractedSearchPrompt = searchMatch[1].trim();
-          responseContent = responseContent.replace(/<SEARCH_PROMPT>[\s\S]*?<\/SEARCH_PROMPT>/g, '').trim();
-        }
-        if (canvasMatch && !responseContent) responseContent = `📄 O documento **"${parsedCanvas.title}"** foi gerado e está disponível no painel lateral.`;
-        inputTokens = Math.round(promptText.length / 4);
-        outputTokens = Math.round(responseContent.length / 4);
-        updateBadgeFromConfig(null);
-      }
+      // Unified LLM call — backend resolve provider, parse tags, return structured object
+      const res = await base44.functions.invoke('invokeLLMUnified', {
+        messages: llmMessages,
+        model: chosenModel,
+      });
+      const { content: llmContent, canvas: parsedCanvas, searchPrompt: extractedSearchPrompt, usage } = res.data;
+      responseContent = llmContent;
+      inputTokens  = usage?.prompt_tokens     || Math.round(promptText.length / 4);
+      outputTokens = usage?.completion_tokens || Math.round(responseContent.length / 4);
+      updateBadgeFromConfig(res.data.provider !== 'base44' && res.data.provider !== 'groq' ? { model_id: res.data.model, model_label: res.data.model } : null);
 
       // Open canvas if content present and canvas mode active
       if (parsedCanvas && canvasMode) {
@@ -227,10 +171,10 @@ export default function Chat() {
       };
       const r = rates[chosenModel] || { input: 0.001, output: 0.002 };
       const estimatedCost = (inputTokens / 1000) * r.input + (outputTokens / 1000) * r.output;
-      const modelMeta2 = MODELS.find(m => m.id === chosenModel);
+      const modelMeta = MODELS.find(m => m.id === chosenModel);
       base44.entities.LLMUsageLog.create({
         model_id: chosenModel,
-        model_label: modelMeta2?.label || chosenModel,
+        model_label: modelMeta?.label || chosenModel,
         input_tokens: inputTokens,
         output_tokens: outputTokens,
         estimated_cost_usd: estimatedCost,
