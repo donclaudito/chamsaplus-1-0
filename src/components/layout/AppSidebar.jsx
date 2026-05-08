@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageSquare, FolderSearch, Beaker, Plus, X, BrainCircuit } from 'lucide-react';
+import {
+  MessageSquare, FolderSearch, Beaker, Plus, X, BrainCircuit,
+  MoreVertical, Share2, Pin, PinOff, Pencil, Trash2, Check
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
 
 const navItems = [
   { path: '/', icon: MessageSquare, label: 'Chat Isa', color: 'text-indigo-400' },
@@ -10,12 +12,137 @@ const navItems = [
   { path: '/laboratorio', icon: Beaker, label: 'Laboratório', color: 'text-purple-400' },
 ];
 
-export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSelectChat, onNewChat, onDeleteChat }) {
+function ChatContextMenu({ chat, onClose, onRename, onPin, onDelete, onShare }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  const items = [
+    { icon: Share2, label: 'Compartilhar conversa', action: onShare, color: '' },
+    { icon: chat.pinned ? PinOff : Pin, label: chat.pinned ? 'Desafixar' : 'Fixar', action: onPin, color: '' },
+    { icon: Pencil, label: 'Renomear', action: onRename, color: '' },
+    { icon: Trash2, label: 'Excluir', action: onDelete, color: 'text-red-500' },
+  ];
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, scale: 0.92, y: -4 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.92, y: -4 }}
+      transition={{ duration: 0.12 }}
+      className="absolute right-0 top-8 z-50 w-52 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
+    >
+      {items.map(({ icon: Icon, label, action, color }) => (
+        <button
+          key={label}
+          onClick={(e) => { e.stopPropagation(); action(); onClose(); }}
+          className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-slate-100 transition-colors text-left ${color || 'text-slate-700'}`}
+        >
+          <Icon className="w-3.5 h-3.5 shrink-0" />
+          {label}
+        </button>
+      ))}
+    </motion.div>
+  );
+}
+
+function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose: closeSidebar }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(chat.title);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (renaming && inputRef.current) inputRef.current.focus();
+  }, [renaming]);
+
+  const handleRenameConfirm = () => {
+    const trimmed = renameValue.trim();
+    if (trimmed && trimmed !== chat.title) onRename(chat.id, trimmed);
+    setRenaming(false);
+  };
+
+  const handleShare = () => {
+    const text = `Sessão Chamsa Isa: ${chat.title}`;
+    if (navigator.share) {
+      navigator.share({ title: 'Chamsa Isa', text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text);
+    }
+  };
+
+  return (
+    <div className={`group relative flex items-center rounded-lg transition-all ${isActive ? 'bg-primary/10' : 'hover:bg-slate-200'}`}>
+      {chat.pinned && (
+        <Pin className="w-2.5 h-2.5 text-primary/50 ml-2 shrink-0" />
+      )}
+
+      {renaming ? (
+        <div className="flex-1 flex items-center gap-1 px-2 py-1.5">
+          <input
+            ref={inputRef}
+            value={renameValue}
+            onChange={e => setRenameValue(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleRenameConfirm(); if (e.key === 'Escape') setRenaming(false); }}
+            className="flex-1 bg-white border border-primary/40 rounded-md px-2 py-1 text-xs text-slate-800 outline-none"
+          />
+          <button onClick={handleRenameConfirm} className="p-1 hover:bg-primary/10 rounded-md">
+            <Check className="w-3 h-3 text-primary" />
+          </button>
+          <button onClick={() => setRenaming(false)} className="p-1 hover:bg-slate-200 rounded-md">
+            <X className="w-3 h-3 text-slate-400" />
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => { onSelect(chat.id); closeSidebar(); }}
+          className={`flex-1 text-left px-3 py-2.5 text-xs font-medium truncate ${isActive ? 'text-primary' : 'text-slate-700'}`}
+        >
+          {chat.title}
+        </button>
+      )}
+
+      {!renaming && (
+        <div className="relative shrink-0">
+          <button
+            onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
+            className="opacity-0 group-hover:opacity-100 p-1 mr-1 hover:bg-slate-300 rounded-md transition-all"
+            title="Opções"
+          >
+            <MoreVertical className="w-3.5 h-3.5 text-slate-500" />
+          </button>
+
+          <AnimatePresence>
+            {menuOpen && (
+              <ChatContextMenu
+                chat={chat}
+                onClose={() => setMenuOpen(false)}
+                onRename={() => { setRenaming(true); setRenameValue(chat.title); }}
+                onPin={() => onPin(chat.id, !chat.pinned)}
+                onDelete={() => onDelete(chat.id)}
+                onShare={handleShare}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, onRenameChat, onPinChat }) {
   const location = useLocation();
+
+  // Pinned first, then rest
+  const sorted = [...chats].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
   return (
     <>
-      {/* Mobile overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -65,10 +192,7 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
                 onClick={onClose}
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                  ${isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
-                  }
+                  ${isActive ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'}
                 `}
               >
                 <item.icon className={`w-4 h-4 ${isActive ? item.color : 'text-slate-400'}`} />
@@ -81,9 +205,7 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
         {/* Chat Sessions */}
         <div className="flex-1 overflow-y-auto px-3 mt-2">
           <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-              Sessões
-            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Sessões</span>
             <button
               onClick={() => { onNewChat(); onClose(); }}
               className="p-1 hover:bg-slate-200 rounded-lg transition-colors"
@@ -93,31 +215,17 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
             </button>
           </div>
           <div className="space-y-0.5">
-            {chats.map(chat => (
-              <div
+            {sorted.map(chat => (
+              <ChatItem
                 key={chat.id}
-                className={`
-                  group flex items-center gap-1 rounded-lg transition-all
-                  ${chat.id === activeChatId ? 'bg-primary/10' : 'hover:bg-slate-200'}
-                `}
-              >
-                <button
-                  onClick={() => { onSelectChat(chat.id); onClose(); }}
-                  className={`
-                    flex-1 text-left px-3 py-2.5 text-xs font-medium truncate
-                    ${chat.id === activeChatId ? 'text-primary' : 'text-slate-700'}
-                  `}
-                >
-                  {chat.title}
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDeleteChat(chat.id); }}
-                  className="opacity-0 group-hover:opacity-100 p-1 mr-1 hover:bg-red-100 hover:text-red-500 rounded-md transition-all"
-                  title="Excluir consulta"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
+                chat={chat}
+                isActive={chat.id === activeChatId}
+                onSelect={onSelectChat}
+                onDelete={onDeleteChat}
+                onRename={onRenameChat}
+                onPin={onPinChat}
+                onClose={onClose}
+              />
             ))}
           </div>
         </div>

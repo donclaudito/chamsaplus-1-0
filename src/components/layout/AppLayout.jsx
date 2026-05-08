@@ -34,6 +34,16 @@ export default function AppLayout() {
     },
   });
 
+  const renameChatMutation = useMutation({
+    mutationFn: ({ id, title }) => base44.entities.ChatSession.update(id, { title }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['chatSessions'] }),
+  });
+
+  const pinChatMutation = useMutation({
+    mutationFn: ({ id, pinned }) => base44.entities.ChatSession.update(id, { pinned }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['chatSessions'] }),
+  });
+
   const createChatMutation = useMutation({
     mutationFn: () => base44.entities.ChatSession.create({
       title: `Consulta ${chatSessions.length + 1}`,
@@ -57,6 +67,8 @@ export default function AppLayout() {
         onSelectChat={setActiveChatId}
         onNewChat={() => createChatMutation.mutate()}
         onDeleteChat={(id) => deleteChatMutation.mutate(id)}
+        onRenameChat={(id, title) => renameChatMutation.mutate({ id, title })}
+        onPinChat={(id, pinned) => pinChatMutation.mutate({ id, pinned })}
       />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
