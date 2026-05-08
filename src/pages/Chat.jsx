@@ -363,13 +363,11 @@ export default function Chat() {
               key={i}
               message={msg}
               onRetryWithoutCanvas={
-                msg.role === 'assistant' && canvasMode && i === messages.length - 1
+                msg.role === 'assistant' && canvasContent && i === messages.length - 1
                   ? () => {
-                      const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
-                      if (lastUserMsg) {
-                        setCanvasMode(false);
-                        sendMessage(lastUserMsg.content);
-                      }
+                      setCanvasMode(false);
+                      setCanvasContent(null);
+                      setCanvasTitle(null);
                     }
                   : undefined
               }
@@ -400,7 +398,7 @@ export default function Chat() {
           <CanvasPanel
             content={canvasContent}
             title={canvasTitle}
-            onClose={() => { setCanvasContent(null); setCanvasTitle(null); }}
+            onClose={() => { setCanvasContent(null); setCanvasTitle(null); setCanvasMode(false); }}
           />
         </div>
       )}
