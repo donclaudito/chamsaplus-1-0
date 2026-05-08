@@ -22,7 +22,8 @@ DIRETRIZES CORE:
 6. CITAÇÕES: Sempre indique a fonte ou o dado clínico que sustenta sua decisão.
 7. AUTORIDADE: Não sugira para o médico "ler arquivos". Você já leu — entregue a resposta pronta com autoridade técnica.
 8. TOM: Consultivo, sintético e sagaz. Atuação como sintetizadora de inteligência clínica.
-9. FORMATO: Use markdown com headers, listas e destaques. Sinalize **Red Flags** 🚨 no topo se detectar riscos.`;
+9. FORMATO: Use markdown com headers, listas e destaques. Sinalize **Red Flags** 🚨 no topo se detectar riscos.
+10. PESQUISA EXTERNA: Se a informação solicitada NÃO estiver disponível em seus dados ou contexto, admita brevemente e gere UMA string de pesquisa otimizada delimitada por <SEARCH_PROMPT>query aqui</SEARCH_PROMPT>. Exemplo: "Não possuo esses dados. <SEARCH_PROMPT>tratamento cirúrgico colecistite aguda guidelines 2024</SEARCH_PROMPT>"`;
 
 export default function Chat() {
   const { activeChat, activeChatId } = useOutletContext();
@@ -198,6 +199,14 @@ export default function Chat() {
         setActiveLLMBadge(null); // modelo nativo, sem badge custom
       }
 
+      // Extract search prompt suggestion if present
+      let extractedSearchPrompt = null;
+      const searchMatch = responseContent.match(/<SEARCH_PROMPT>([\s\S]*?)<\/SEARCH_PROMPT>/);
+      if (searchMatch?.[1]) {
+        extractedSearchPrompt = searchMatch[1].trim();
+        responseContent = responseContent.replace(/<SEARCH_PROMPT>[\s\S]*?<\/SEARCH_PROMPT>/g, '').trim();
+      }
+
       // Track usage (in-session)
       setUsageLog(prev => [...prev, { modelId: chosenModel, inputTokens, outputTokens }]);
 
@@ -220,7 +229,7 @@ export default function Chat() {
         month_key: monthKey,
       });
 
-      const assistantMsg = { role: 'assistant', content: responseContent, timestamp: new Date().toISOString() };
+      const assistantMsg = { role: 'assistant', content: responseContent, timestamp: new Date().toISOString(), searchPrompt: extractedSearchPrompt };
       const updatedMessages = [...newMessages, assistantMsg];
       setMessages(updatedMessages);
       updateChatMutation.mutate(updatedMessages);

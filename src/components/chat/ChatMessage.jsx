@@ -3,6 +3,7 @@ import { Bot, User, Copy, Check, FileDown, Printer } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { jsPDF } from 'jspdf';
+import SearchSuggestion from './SearchSuggestion';
 
 export default function ChatMessage({ message }) {
   const [copied, setCopied] = useState(false);
@@ -96,6 +97,10 @@ export default function ChatMessage({ message }) {
           </div>
         ) : (
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+        )}
+
+        {isAssistant && message.searchPrompt && (
+          <SearchSuggestion query={message.searchPrompt} />
         )}
 
         {/* Actions */}
