@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, User, Copy, Check, FileDown, Printer, ThumbsUp, ThumbsDown, MoreHorizontal, FileText, LayoutPanelLeft } from 'lucide-react';
+import { Bot, User, Copy, Check, FileDown, Printer, ThumbsUp, ThumbsDown, MoreHorizontal, LayoutPanelLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { jsPDF } from 'jspdf';
@@ -81,7 +81,7 @@ export default function ChatMessage({ message, onRetryWithoutCanvas }) {
     >
       {isAssistant && (
         <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-          <FileText className="w-4 h-4 text-primary" />
+          <Bot className="w-4 h-4 text-primary" />
         </div>
       )}
 

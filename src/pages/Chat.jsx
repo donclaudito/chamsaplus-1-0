@@ -313,8 +313,8 @@ export default function Chat() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Main Chat Column */}
-      <div className="flex flex-col flex-1 min-w-0">
+      {/* Main Chat Column — shrinks when Canvas is open */}
+      <div className={`flex flex-col min-w-0 transition-all duration-300 ${canvasContent ? 'flex-none w-[420px] border-r border-border' : 'flex-1'}`}>
       <LLMUsageBar usageLog={usageLog} />
 
       {/* Model routing bar */}
@@ -392,9 +392,9 @@ export default function Chat() {
       />
       </div>
 
-      {/* Canvas Panel */}
+      {/* Canvas Panel — flex-1 takes remaining space */}
       {canvasContent && (
-        <div className="w-[500px] shrink-0 hidden md:flex flex-col border-l border-border">
+        <div className="flex-1 hidden md:flex flex-col overflow-hidden">
           <CanvasPanel
             content={canvasContent}
             title={canvasTitle}
