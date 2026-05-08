@@ -37,12 +37,30 @@ export default function Chat() {
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
 
+  const PROVIDER_LABELS = { openai: 'OpenAI', anthropic: 'Anthropic', groq: 'Groq', google: 'Google AI', mistral: 'Mistral AI', together: 'Together AI' };
+
   useEffect(() => {
     if (activeChat?.messages) {
       setMessages(activeChat.messages);
     }
     setUsageLog([]); // reset usage on session change
   }, [activeChatId, activeChat]);
+
+  // Show badge immediately based on active custom LLM config
+  useEffect(() => {
+    base44.entities.UserLLMConfig.filter({ is_active: true }).then((configs) => {
+      if (configs?.length > 0) {
+        const cfg = configs[0];
+        setActiveLLMBadge({
+          label: PROVIDER_LABELS[cfg.provider] || cfg.provider,
+          modelId: cfg.model_id,
+          provider: cfg.provider,
+        });
+      } else {
+        setActiveLLMBadge(null);
+      }
+    }).catch(() => setActiveLLMBadge(null));
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
