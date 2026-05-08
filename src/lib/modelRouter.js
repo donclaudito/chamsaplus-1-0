@@ -54,15 +54,30 @@ const MID_KEYWORDS = [
 /**
  * Auto-detects the best model ID based on query complexity.
  * Returns the model ID string.
+ *
+ * Tiers:
+ *  deep      — raciocínio crítico, dados clínicos, emergências
+ *  balanced  — análise padrão, tratamentos, RAG com contexto vetorial
+ *  fast      — saudações, confirmações, perguntas simples (<80 chars sem keywords)
  */
-export function detectModel(text, hasDataBlocks = false) {
-  if (hasDataBlocks) return 'claude_sonnet_4_6'; // Always Deep for data blocks
+export function detectModel(text, hasDataBlocks = false, hasVectorContext = false) {
+  if (hasDataBlocks) return 'claude_sonnet_4_6';
 
   const lower = text.toLowerCase();
+
+  // Fast tier: short queries with no clinical keywords
+  const isTrivial = text.length < 80 &&
+    !DEEP_KEYWORDS.some(kw => lower.includes(kw)) &&
+    !MID_KEYWORDS.some(kw => lower.includes(kw));
+  if (isTrivial) return 'gpt_5_mini';
+
+  // Deep tier: clinical complexity OR long text
   const isDeep = DEEP_KEYWORDS.some(kw => lower.includes(kw)) || text.length > 400;
   if (isDeep) return 'claude_sonnet_4_6';
 
-  const isMid = MID_KEYWORDS.some(kw => lower.includes(kw)) || text.length > 150;
+  // Balanced: RAG context available → Llama handles well with retrieved context
+  // Mid keywords or moderate length
+  const isMid = MID_KEYWORDS.some(kw => lower.includes(kw)) || text.length > 150 || hasVectorContext;
   if (isMid) return 'llama-3.3-70b-versatile';
 
   return 'gpt_5_mini';

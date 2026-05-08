@@ -123,18 +123,27 @@ export default function Chat() {
       // Skills unavailable — proceed without
     }
 
-    // Fetch Drive folder files in real-time
+    // RAG: Semantic search — retrieve only relevant chunks instead of full dump
     let driveContext = '';
+    let hasVectorContext = false;
     if (driveFolderId) {
       try {
-        const driveRes = await base44.functions.invoke('readDriveFolder', { folder_id: driveFolderId });
-        const driveFiles = driveRes.data?.files || [];
-        if (driveFiles.length > 0) {
-          driveContext = '\n\nCONTEXTO DO GOOGLE DRIVE (leitura em tempo real):\n' +
-            driveFiles.map(f => `[ARQUIVO: ${f.name}]\n${f.content}`).join('\n\n---\n\n');
+        const ragRes = await base44.functions.invoke('semanticSearch', {
+          query: text,
+          folder_id: driveFolderId,
+          top_k: 6,
+        });
+        const chunks = ragRes.data?.chunks || [];
+        if (chunks.length > 0 && chunks[0].score > 0.4) {
+          hasVectorContext = true;
+          driveContext = '\n\nCONTEXTO RECUPERADO VIA RAG (chunks mais relevantes):\n' +
+            chunks
+              .filter(c => c.score > 0.35)
+              .map(c => `[${c.source_name} — sim: ${c.score.toFixed(2)}]\n${c.chunk_text}`)
+              .join('\n\n---\n\n');
         }
       } catch (_) {
-        // Drive unavailable — proceed without context
+        // RAG unavailable — fallback silently
       }
     }
 
@@ -149,9 +158,9 @@ export default function Chat() {
 
     const promptText = llmMessages.map(m => `${m.role}: ${m.content}`).join('\n');
 
-    // Model routing: manual override or auto-detect
+    // Model routing: manual override or auto-detect (RAG-aware)
     const hasDataBlocks = newMessages.some(m => m.role === 'data-block');
-    const chosenModel = manualModel || detectModel(text, hasDataBlocks);
+    const chosenModel = manualModel || detectModel(text, hasDataBlocks, hasVectorContext);
     setActiveModel(chosenModel);
 
     try {

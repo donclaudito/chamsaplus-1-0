@@ -1,0 +1,57 @@
+{
+  "name": "KnowledgeVector",
+  "type": "object",
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "description": "ID da fonte original (arquivo Drive, Knowledge ID, etc)"
+    },
+    "source_name": {
+      "type": "string",
+      "description": "Nome do documento ou arquivo"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "drive",
+        "knowledge",
+        "manual"
+      ],
+      "default": "drive",
+      "description": "Tipo de origem do chunk"
+    },
+    "chunk_index": {
+      "type": "number",
+      "description": "\u00cdndice do chunk dentro do documento"
+    },
+    "chunk_text": {
+      "type": "string",
+      "description": "Texto do chunk (m\u00e1x ~512 tokens)"
+    },
+    "embedding": {
+      "type": "array",
+      "description": "Vetor de embedding (array de floats)",
+      "items": {
+        "type": "number"
+      }
+    },
+    "embedding_model": {
+      "type": "string",
+      "default": "nomic-embed-text-v1_5",
+      "description": "Modelo usado para gerar o embedding"
+    },
+    "folder_id": {
+      "type": "string",
+      "description": "ID da pasta do Drive de origem"
+    },
+    "content_hash": {
+      "type": "string",
+      "description": "Hash MD5 do chunk_text para deduplica\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "source_name",
+    "chunk_text",
+    "embedding"
+  ]
+}

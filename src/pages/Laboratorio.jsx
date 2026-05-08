@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Beaker, Brain, Shield, Zap, History, Activity, CheckCircle2, Sparkles, Palette, LayoutGrid } from 'lucide-react';
+import { Beaker, Brain, Shield, Zap, History, Activity, CheckCircle2, Sparkles, Palette, LayoutGrid, Database } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import LLMConsumoDashboard from '@/components/laboratorio/LLMConsumoDashboard';
@@ -8,6 +8,7 @@ import ThemeSelector from '@/components/laboratorio/ThemeSelector';
 import ComponentShowcase from '@/components/laboratorio/ComponentShowcase';
 import SkillsPanel from '@/components/laboratorio/SkillsPanel';
 import LLMConfigPanel from '@/components/laboratorio/LLMConfigPanel';
+import VectorIndexPanel from '@/components/laboratorio/VectorIndexPanel';
 
 const coreSkills = [
   { label: 'Deep Reasoning', desc: 'Protocolo CoT (Chain-of-Thought)', icon: Brain, color: 'text-purple-600', bg: 'bg-purple-500/10' },
@@ -122,6 +123,11 @@ export default function Laboratorio() {
               <CollapsiblePanel title="Biblioteca de Componentes" icon={LayoutGrid} iconColor="text-blue-500" badge="UI kit" defaultOpen={true}>
                 <p className={`text-xs mb-4 ${textMuted}`}>Pré-visualização e código dos componentes reutilizáveis do sistema.</p>
                 <ComponentShowcase />
+              </CollapsiblePanel>
+
+              <CollapsiblePanel title="Índice Vetorial RAG" icon={Database} iconColor="text-violet-500" badge="RAG" defaultOpen={true}>
+                <p className={`text-xs mb-4 ${textMuted}`}>Indexe os documentos do Google Drive para busca semântica. O chat usará RAG automaticamente em vez de fazer dump completo dos arquivos.</p>
+                <VectorIndexPanel />
               </CollapsiblePanel>
 
               <CollapsiblePanel title="Consumo LLM — Dia / Mês" icon={Activity} iconColor="text-emerald-500" defaultOpen={true}>
