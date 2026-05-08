@@ -227,13 +227,18 @@ export default function Chat() {
 
       // Extract canvas content if present — robust multi-quote regex
       const canvasMatch = responseContent.match(/<CANVAS[^>]*title\s*=\s*["'\u201c\u201d]([^"'\u201c\u201d\n]*)["'\u201c\u201d][^>]*>([\s\S]*?)<\/CANVAS>/i);
+      // Always strip <CANVAS> tags from the chat message body first
+      responseContent = responseContent.replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '').trim();
       // Only show canvas panel if user explicitly enabled canvas mode
       if (canvasMatch && canvasMode) {
         setCanvasTitle(canvasMatch[1].trim());
         setCanvasContent(canvasMatch[2].trim());
+        // If LLM produced no summary text alongside the canvas, generate a tidy fallback
+        if (responseContent === '') {
+          const docTitle = canvasMatch[1].trim() || 'Canvas';
+          responseContent = `📄 O documento **"${docTitle}"** foi gerado e está disponível no painel lateral.`;
+        }
       }
-      // Always strip <CANVAS> tags from the chat message body
-      responseContent = responseContent.replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '').trim();
 
       // Extract search prompt suggestion if present
       let extractedSearchPrompt = null;
