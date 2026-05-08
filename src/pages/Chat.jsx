@@ -96,6 +96,10 @@ export default function Chat() {
     setMessages(newMessages);
     setIsLoading(true);
 
+    // Reset canvas panel on every new message
+    setCanvasContent(null);
+    setCanvasTitle(null);
+
     // Update session title with the first user message snippet
     const userMessages = newMessages.filter(m => m.role === 'user');
     if (userMessages.length === 1) {
@@ -220,10 +224,6 @@ export default function Chat() {
         outputTokens = Math.round(responseContent.length / 4);
         setActiveLLMBadge(null); // modelo nativo, sem badge custom
       }
-
-      // Always reset canvas before processing new response
-      setCanvasContent(null);
-      setCanvasTitle(null);
 
       // Extract canvas content if present — support straight and curly quotes
       const canvasMatch = responseContent.match(/<CANVAS\s+title=[""\u201c\u201d]([^""\u201c\u201d]*)[""\u201c\u201d]>([\s\S]*?)<\/CANVAS>/i);
