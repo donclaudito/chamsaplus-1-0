@@ -55,6 +55,17 @@ export default function AppLayout() {
     },
   });
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids) => Promise.all(ids.map(id => base44.entities.ChatSession.delete(id))),
+    onSuccess: (_, ids) => {
+      queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
+      if (ids.includes(activeChatId)) {
+        const remaining = chatSessions.filter(c => !ids.includes(c.id));
+        setActiveChatId(remaining[0]?.id || null);
+      }
+    },
+  });
+
   const activeChat = chatSessions.find(c => c.id === activeChatId) || chatSessions[0];
 
   return (
@@ -66,7 +77,9 @@ export default function AppLayout() {
         activeChatId={activeChatId}
         onSelectChat={setActiveChatId}
         onNewChat={() => createChatMutation.mutate()}
+        isCreating={createChatMutation.isPending}
         onDeleteChat={(id) => deleteChatMutation.mutate(id)}
+        onBulkDelete={(ids) => bulkDeleteMutation.mutate(ids)}
         onRenameChat={(id, title) => renameChatMutation.mutate({ id, title })}
         onPinChat={(id, pinned) => pinChatMutation.mutate({ id, pinned })}
       />

@@ -3,7 +3,8 @@ import ShareDialog from '@/components/chat/ShareDialog';
 import { Link, useLocation } from 'react-router-dom';
 import {
   MessageSquare, FolderSearch, Beaker, Plus, X, BrainCircuit,
-  MoreVertical, Share2, Pin, PinOff, Pencil, Trash2, Check
+  MoreVertical, Share2, Pin, PinOff, Pencil, Trash2, Check,
+  CheckSquare, Square
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -132,11 +133,32 @@ function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose
   );
 }
 
-export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, onRenameChat, onPinChat }) {
+export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSelectChat, onNewChat, isCreating, onDeleteChat, onBulkDelete, onRenameChat, onPinChat }) {
   const location = useLocation();
+  const [selected, setSelected] = useState(new Set());
+  const [selectMode, setSelectMode] = useState(false);
 
-  // Pinned first, then rest
   const sorted = [...chats].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+
+  const toggleSelect = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = () => {
+    if (selected.size === 0) return;
+    onBulkDelete([...selected]);
+    setSelected(new Set());
+    setSelectMode(false);
+  };
+
+  const toggleSelectMode = () => {
+    setSelectMode(v => !v);
+    setSelected(new Set());
+  };
 
   return (
     <>
@@ -203,26 +225,72 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
         <div className="flex-1 overflow-y-auto px-3 mt-2">
           <div className="flex items-center justify-between mb-2 px-1">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Sessões</span>
-            <button
-              onClick={() => { onNewChat(); onClose(); }}
-              className="p-1 hover:bg-slate-200 rounded-lg transition-colors"
-              title="Nova consulta"
-            >
-              <Plus className="w-3.5 h-3.5 text-slate-500" />
-            </button>
+            <div className="flex items-center gap-1">
+              {/* Select mode toggle */}
+              <button
+                onClick={toggleSelectMode}
+                className={`p-1 rounded-lg transition-colors text-[10px] font-semibold ${selectMode ? 'bg-primary/15 text-primary' : 'hover:bg-slate-200 text-slate-500'}`}
+                title="Selecionar para exclusão em bloco"
+              >
+                <CheckSquare className="w-3.5 h-3.5" />
+              </button>
+              {/* New chat button — disabled while creating */}
+              <button
+                onClick={() => { if (!isCreating) { onNewChat(); onClose(); } }}
+                disabled={isCreating}
+                className="p-1 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-40"
+                title="Nova consulta"
+              >
+                <Plus className="w-3.5 h-3.5 text-slate-500" />
+              </button>
+            </div>
           </div>
+
+          {/* Bulk delete bar */}
+          {selectMode && (
+            <div className="flex items-center justify-between mb-2 px-1 py-1.5 bg-red-50 border border-red-200 rounded-lg">
+              <span className="text-[10px] text-red-600 font-semibold">{selected.size} selecionada(s)</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setSelected(new Set(sorted.map(c => c.id)))}
+                  className="text-[10px] text-slate-500 hover:text-slate-700 px-1"
+                >
+                  Todas
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={selected.size === 0}
+                  className="flex items-center gap-1 px-2 py-0.5 bg-red-500 text-white rounded-md text-[10px] font-semibold disabled:opacity-40 hover:bg-red-600 transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" /> Excluir
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-0.5">
             {sorted.map(chat => (
-              <ChatItem
-                key={chat.id}
-                chat={chat}
-                isActive={chat.id === activeChatId}
-                onSelect={onSelectChat}
-                onDelete={onDeleteChat}
-                onRename={onRenameChat}
-                onPin={onPinChat}
-                onClose={onClose}
-              />
+              <div key={chat.id} className="flex items-center gap-1">
+                {selectMode && (
+                  <button onClick={() => toggleSelect(chat.id)} className="shrink-0 p-1">
+                    {selected.has(chat.id)
+                      ? <CheckSquare className="w-3.5 h-3.5 text-primary" />
+                      : <Square className="w-3.5 h-3.5 text-slate-400" />
+                    }
+                  </button>
+                )}
+                <div className="flex-1 min-w-0">
+                  <ChatItem
+                    chat={chat}
+                    isActive={chat.id === activeChatId}
+                    onSelect={onSelectChat}
+                    onDelete={onDeleteChat}
+                    onRename={onRenameChat}
+                    onPin={onPinChat}
+                    onClose={onClose}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         </div>
