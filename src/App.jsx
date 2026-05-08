@@ -10,6 +10,7 @@ import Chat from '@/pages/Chat';
 import Biblioteca from '@/pages/Biblioteca';
 import Laboratorio from '@/pages/Laboratorio';
 import SharedChat from '@/pages/SharedChat';
+import Integracoes from '@/pages/Integracoes';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -41,6 +42,7 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<Chat />} />
         <Route path="/biblioteca" element={<Biblioteca />} />
         <Route path="/laboratorio" element={<Laboratorio />} />
+        <Route path="/integracoes" element={<Integracoes />} />
       </Route>
       <Route path="/share/:shareId" element={<SharedChat />} />
       <Route path="*" element={<PageNotFound />} />

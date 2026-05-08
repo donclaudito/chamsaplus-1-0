@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   MessageSquare, FolderSearch, Beaker, Plus, X, BrainCircuit,
   MoreVertical, Share2, Pin, PinOff, Pencil, Trash2, Check,
-  CheckSquare, Square
+  CheckSquare, Square, Plug
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -12,6 +12,7 @@ const navItems = [
   { path: '/', icon: MessageSquare, label: 'Chat Isa', color: 'text-indigo-400' },
   { path: '/biblioteca', icon: FolderSearch, label: 'Biblioteca', color: 'text-emerald-400' },
   { path: '/laboratorio', icon: Beaker, label: 'Laboratório', color: 'text-purple-400' },
+  { path: '/integracoes', icon: Plug, label: 'Integrações', color: 'text-amber-400' },
 ];
 
 function ChatContextMenu({ chat, onClose, onRename, onPin, onDelete, onShare }) {
