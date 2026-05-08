@@ -280,20 +280,7 @@ export default function Chat() {
 
   const handleTool = (toolId) => {
     if (toolId === 'canvas') {
-      if (canvasMode) {
-        // Desativar modo canvas
-        setCanvasMode(false);
-      } else {
-        // Ativar modo canvas e disparar primeiro canvas
-        setCanvasMode(true);
-        const lastMessages = messages.slice(-6).filter(m => m.role !== 'data-block');
-        const topic = lastMessages.length > 0
-          ? lastMessages.map(m => `${m.role === 'user' ? 'Usuário' : 'Chamsa'}: ${m.content.slice(0, 200)}`).join('\n')
-          : 'a conversa atual';
-        sendMessage(
-          `Com base no tópico da nossa conversa, gere agora um documento Canvas completo e estruturado — relatório detalhado, tabelas, análise clínica completa — obrigatoriamente dentro da tag <CANVAS title="Resumo Clínico Estruturado">...</CANVAS>. Contexto:\n${topic}`
-        );
-      }
+      setCanvasMode(prev => !prev);
     }
   };
 
