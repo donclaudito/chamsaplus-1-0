@@ -133,6 +133,38 @@
   margin-bottom: 0.75em;
 }
 .chamsa-prose strong { font-weight: 700; }
+.chamsa-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+  font-size: 0.85rem;
+}
+.chamsa-prose thead tr {
+  background: hsl(var(--muted));
+  border-bottom: 2px solid hsl(var(--border));
+}
+.chamsa-prose th {
+  padding: 0.5em 0.85em;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: hsl(var(--foreground));
+  white-space: nowrap;
+}
+.chamsa-prose td {
+  padding: 0.45em 0.85em;
+  border-bottom: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  vertical-align: top;
+  line-height: 1.5;
+}
+.chamsa-prose tbody tr:last-child td {
+  border-bottom: none;
+}
+.chamsa-prose tbody tr:hover {
+  background: hsl(var(--muted) / 0.5);
+}
 .chamsa-prose blockquote {
   border-left: 3px solid hsl(var(--primary));
   padding-left: 1em;

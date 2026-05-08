@@ -6,6 +6,7 @@ import {
   Download, ChevronDown
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function CanvasPanel({ content, title, onClose }) {
   const [expanded, setExpanded] = useState(false);
@@ -264,7 +265,7 @@ export default function CanvasPanel({ content, title, onClose }) {
             title="Clique para editar"
           >
             <div className="chamsa-prose text-sm max-w-none prose-headings:font-bold prose-h1:text-xl prose-h2:text-lg">
-              <ReactMarkdown>{text}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
             </div>
           </div>
         ) : (

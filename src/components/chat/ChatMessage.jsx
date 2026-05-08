@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Bot, User, Copy, Check, FileDown, Printer, ThumbsUp, ThumbsDown, MoreHorizontal, LayoutPanelLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { jsPDF } from 'jspdf';
 import SearchSuggestion from './SearchSuggestion';
 
@@ -94,7 +95,7 @@ export default function ChatMessage({ message, onRetryWithoutCanvas }) {
       `}>
         {isAssistant ? (
           <div className="chamsa-prose text-sm">
-            <ReactMarkdown>{message.content}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
           </div>
         ) : (
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
