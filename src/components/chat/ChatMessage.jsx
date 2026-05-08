@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Bot, User, Copy, Check, FileDown, Printer } from 'lucide-react';
+import { Bot, User, Copy, Check, FileDown, Printer, ThumbsUp, ThumbsDown, MoreHorizontal, FileText, LayoutPanelLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { jsPDF } from 'jspdf';
 import SearchSuggestion from './SearchSuggestion';
 
-export default function ChatMessage({ message }) {
+export default function ChatMessage({ message, onRetryWithoutCanvas }) {
   const [copied, setCopied] = useState(false);
+  const [liked, setLiked] = useState(null); // 'up' | 'down' | null
   const isAssistant = message.role === 'assistant';
   const isData = message.role === 'data-block';
 
@@ -80,7 +81,7 @@ export default function ChatMessage({ message }) {
     >
       {isAssistant && (
         <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-          <Bot className="w-4 h-4 text-primary" />
+          <FileText className="w-4 h-4 text-primary" />
         </div>
       )}
 
@@ -105,13 +106,44 @@ export default function ChatMessage({ message }) {
 
         {/* Actions */}
         {isAssistant && (
-          <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={handleCopy} className="p-1 hover:bg-muted rounded-md transition-colors" title="Copiar">
-              {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
-            </button>
-            <button onClick={handlePrintPDF} className="p-1 hover:bg-muted rounded-md transition-colors" title="Exportar PDF">
-              <Printer className="w-3 h-3 text-muted-foreground" />
-            </button>
+          <div className="mt-3 space-y-2">
+            {/* Retry without canvas */}
+            {onRetryWithoutCanvas && (
+              <button
+                onClick={onRetryWithoutCanvas}
+                className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+              >
+                <LayoutPanelLeft className="w-3 h-3" />
+                Tentar novamente sem a ferramenta Canvas
+              </button>
+            )}
+            {/* Feedback row */}
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => setLiked(liked === 'up' ? null : 'up')}
+                className={`p-1 rounded-md transition-colors ${liked === 'up' ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                title="Útil"
+              >
+                <ThumbsUp className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => setLiked(liked === 'down' ? null : 'down')}
+                className={`p-1 rounded-md transition-colors ${liked === 'down' ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'}`}
+                title="Não útil"
+              >
+                <ThumbsDown className="w-3 h-3" />
+              </button>
+              <button onClick={handleCopy} className="p-1 hover:bg-muted rounded-md transition-colors" title="Copiar">
+                {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
+              </button>
+              <button onClick={handlePrintPDF} className="p-1 hover:bg-muted rounded-md transition-colors" title="Exportar PDF">
+                <Printer className="w-3 h-3 text-muted-foreground" />
+              </button>
+              <button className="p-1 hover:bg-muted rounded-md transition-colors" title="Mais opções">
+                <MoreHorizontal className="w-3 h-3 text-muted-foreground" />
+              </button>
+              <span className="text-[10px] text-muted-foreground/50 ml-1">All</span>
+            </div>
           </div>
         )}
 

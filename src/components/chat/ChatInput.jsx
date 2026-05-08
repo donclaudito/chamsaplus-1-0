@@ -127,7 +127,7 @@ export default function ChatInput({ onSend, onPaste, onTool, isLoading, canvasMo
             value={input}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder="Consulte a Chamsa Isa..."
+            placeholder="Vamos escrever ou criar algo..."
             rows={1}
             className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground/50 py-2 max-h-32 sm:max-h-40"
             style={{ fontSize: '16px' }}

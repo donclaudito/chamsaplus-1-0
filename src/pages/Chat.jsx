@@ -359,7 +359,21 @@ export default function Chat() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6">
         <div className="max-w-3xl mx-auto space-y-4">
           {messages.map((msg, i) => (
-            <ChatMessage key={i} message={msg} />
+            <ChatMessage
+              key={i}
+              message={msg}
+              onRetryWithoutCanvas={
+                msg.role === 'assistant' && canvasMode && i === messages.length - 1
+                  ? () => {
+                      const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+                      if (lastUserMsg) {
+                        setCanvasMode(false);
+                        sendMessage(lastUserMsg.content);
+                      }
+                    }
+                  : undefined
+              }
+            />
           ))}
           {isLoading && <ThinkingIndicator />}
         </div>
