@@ -110,27 +110,41 @@ export default function CanvasPanel({ content, title, onClose }) {
   };
 
   const handlePrint = () => {
+    // Captura o HTML renderizado do preview (igual ao que o usuário vê)
+    const previewEl = document.getElementById('canvas-preview-content');
+    const renderedHTML = previewEl ? previewEl.innerHTML : `<pre style="white-space:pre-wrap">${text}</pre>`;
+
     const win = window.open('', '_blank');
-    win.document.write(`<html><head><title>${title || 'Canvas'}</title>
+    win.document.write(`<!DOCTYPE html><html><head><title>${title || 'Canvas'}</title>
       <style>
-        body{font-family:Georgia,serif;padding:3rem;line-height:1.8;max-width:760px;margin:auto;color:#1a1a1a}
-        h1{font-size:1.8rem;border-bottom:2px solid #eee;padding-bottom:.5em}
-        h2{font-size:1.4rem;margin-top:1.5em}h3{font-size:1.1rem}
-        h1,h2,h3{font-weight:700;margin-bottom:.4em}
-        ul,ol{margin-left:1.5em;margin-bottom:.75em}li{margin-bottom:.3em}
-        code{background:#f5f5f5;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:.9em}
-        pre{background:#f5f5f5;padding:1em;border-radius:8px;overflow-x:auto}
-        strong{font-weight:700}em{font-style:italic}
-        blockquote{border-left:3px solid #ccc;padding-left:1em;color:#555;margin:1em 0}
-        table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:.5em 1em;text-align:left}
-        @media print{body{padding:1.5rem}}
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; padding: 3rem; line-height: 1.8; max-width: 820px; margin: auto; color: #1a1a1a; font-size: 14px; }
+        h1 { font-size: 1.6rem; border-bottom: 2px solid #e5e7eb; padding-bottom: .5em; margin-bottom: 1em; font-weight: 700; }
+        h2 { font-size: 1.25rem; margin-top: 1.5em; margin-bottom: .4em; font-weight: 700; }
+        h3 { font-size: 1.05rem; margin-top: 1.2em; margin-bottom: .3em; font-weight: 600; }
+        p { margin-bottom: .75em; }
+        ul, ol { margin-left: 1.5em; margin-bottom: .75em; }
+        li { margin-bottom: .25em; }
+        strong { font-weight: 700; }
+        em { font-style: italic; }
+        code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: .88em; }
+        pre { background: #f3f4f6; padding: 1em; border-radius: 8px; overflow-x: auto; margin-bottom: .75em; font-size: .88em; }
+        blockquote { border-left: 3px solid #6366f1; padding-left: 1em; color: #555; margin: 1em 0; font-style: italic; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 1em; font-size: .9em; }
+        thead tr { background: #f3f4f6; border-bottom: 2px solid #d1d5db; }
+        th { padding: .5em 1em; text-align: left; font-weight: 700; font-size: .8rem; letter-spacing: .04em; white-space: nowrap; }
+        td { padding: .45em 1em; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:nth-child(even) { background: #fafafa; }
+        @media print { body { padding: 1.5rem; } }
       </style>
     </head><body>
       <h1>${title || 'Canvas'}</h1>
-      <pre style="white-space:pre-wrap;font-family:Georgia,serif;border:none;background:none;padding:0">${text}</pre>
+      ${renderedHTML}
     </body></html>`);
     win.document.close();
-    win.print();
+    setTimeout(() => { win.print(); }, 400);
   };
 
   const switchMode = () => {
@@ -264,7 +278,7 @@ export default function CanvasPanel({ content, title, onClose }) {
             onClick={switchMode}
             title="Clique para editar"
           >
-            <div className="chamsa-prose text-sm max-w-none prose-headings:font-bold prose-h1:text-xl prose-h2:text-lg">
+            <div id="canvas-preview-content" className="chamsa-prose text-sm max-w-none prose-headings:font-bold prose-h1:text-xl prose-h2:text-lg">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
             </div>
           </div>
