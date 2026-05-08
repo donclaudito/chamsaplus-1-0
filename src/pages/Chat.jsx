@@ -225,16 +225,15 @@ export default function Chat() {
         setActiveLLMBadge(null); // modelo nativo, sem badge custom
       }
 
-      // Extract canvas content if present — support straight and curly quotes
-      const canvasMatch = responseContent.match(/<CANVAS\s+title=[""\u201c\u201d]([^""\u201c\u201d]*)[""\u201c\u201d]>([\s\S]*?)<\/CANVAS>/i);
-      if (canvasMatch) {
+      // Extract canvas content if present — robust multi-quote regex
+      const canvasMatch = responseContent.match(/<CANVAS[^>]*title\s*=\s*["'\u201c\u201d]([^"'\u201c\u201d\n]*)["'\u201c\u201d][^>]*>([\s\S]*?)<\/CANVAS>/i);
+      // Only show canvas panel if user explicitly enabled canvas mode
+      if (canvasMatch && canvasMode) {
         setCanvasTitle(canvasMatch[1].trim());
         setCanvasContent(canvasMatch[2].trim());
-        responseContent = responseContent.replace(/<CANVAS\s+title=[""\u201c\u201d][^""\u201c\u201d]*[""\u201c\u201d]>[\s\S]*?<\/CANVAS>/gi, '').trim();
-      } else {
-        // Strip any raw <CANVAS> tags that weren't parsed correctly
-        responseContent = responseContent.replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '').trim();
       }
+      // Always strip <CANVAS> tags from the chat message body
+      responseContent = responseContent.replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '').trim();
 
       // Extract search prompt suggestion if present
       let extractedSearchPrompt = null;
