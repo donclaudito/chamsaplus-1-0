@@ -28,6 +28,15 @@
       "type": "boolean",
       "default": false,
       "description": "Se a sess\u00e3o est\u00e1 fixada no topo da lista"
+    },
+    "share_id": {
+      "type": "string",
+      "description": "ID \u00fanico p\u00fablico para compartilhamento via link"
+    },
+    "is_shared": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se a sess\u00e3o est\u00e1 acess\u00edvel publicamente via link"
     }
   },
   "required": [

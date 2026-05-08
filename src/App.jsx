@@ -9,6 +9,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import Chat from '@/pages/Chat';
 import Biblioteca from '@/pages/Biblioteca';
 import Laboratorio from '@/pages/Laboratorio';
+import SharedChat from '@/pages/SharedChat';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -41,6 +42,7 @@ const AuthenticatedApp = () => {
         <Route path="/biblioteca" element={<Biblioteca />} />
         <Route path="/laboratorio" element={<Laboratorio />} />
       </Route>
+      <Route path="/share/:shareId" element={<SharedChat />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

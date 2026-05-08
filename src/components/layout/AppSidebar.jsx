@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ShareDialog from '@/components/chat/ShareDialog';
 import { Link, useLocation } from 'react-router-dom';
 import {
   MessageSquare, FolderSearch, Beaker, Plus, X, BrainCircuit,
@@ -55,6 +56,7 @@ function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(chat.title);
+  const [shareOpen, setShareOpen] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -67,14 +69,7 @@ function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose
     setRenaming(false);
   };
 
-  const handleShare = () => {
-    const text = `Sessão Chamsa Isa: ${chat.title}`;
-    if (navigator.share) {
-      navigator.share({ title: 'Chamsa Isa', text }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(text);
-    }
-  };
+  const handleShare = () => setShareOpen(true);
 
   return (
     <div className={`group relative flex items-center rounded-lg transition-all ${isActive ? 'bg-primary/10' : 'hover:bg-slate-200'}`}>
@@ -131,6 +126,8 @@ function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose
           </AnimatePresence>
         </div>
       )}
+
+      <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} chat={chat} />
     </div>
   );
 }
