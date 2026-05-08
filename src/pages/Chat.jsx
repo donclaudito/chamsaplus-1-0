@@ -396,7 +396,7 @@ export default function Chat() {
 
       {/* Canvas Panel */}
       {canvasContent && (
-        <div className="w-[420px] shrink-0 hidden md:flex flex-col border-l border-border">
+        <div className="w-[500px] shrink-0 hidden md:flex flex-col border-l border-border">
           <CanvasPanel
             content={canvasContent}
             title={canvasTitle}
