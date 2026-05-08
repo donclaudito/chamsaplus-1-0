@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
 import ThinkingIndicator from '@/components/chat/ThinkingIndicator';
@@ -10,7 +10,10 @@ import ModelSelector from '@/components/chat/ModelSelector';
 import LLMUsageBar from '@/components/chat/LLMUsageBar.jsx';
 import DriveSourceConfig from '@/components/chat/DriveSourceConfig';
 import CanvasPanel from '@/components/chat/CanvasPanel';
-import { detectModel, getModelById, MODELS } from '@/lib/modelRouter';
+import { useChatMessages } from '@/hooks/useChatMessages';
+import { useLLMConfig } from '@/hooks/useLLMConfig';
+import { useCanvasState } from '@/hooks/useCanvasState';
+import { MODELS } from '@/lib/modelRouter';
 
 const SYSTEM_PROMPT = `Você é Chamsa Isa v4.1, a Estrategista Clínica de Elite e extensão da mente do Dr. Claudio.
 
@@ -39,78 +42,57 @@ DIRETRIZES CORE:
 
 export default function Chat() {
   const { activeChat, activeChatId } = useOutletContext();
-  const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showPaste, setShowPaste] = useState(false);
-  const [manualModel, setManualModel] = useState(null); // null = auto mode
-  const [activeModel, setActiveModel] = useState('claude_sonnet_4_6');
   const [usageLog, setUsageLog] = useState([]);
-  const [driveFolderId, setDriveFolderId] = useState(() => localStorage.getItem('chamsa_drive_folder') || '1eWosMBtk9N5tICSKLETbeECw9qlSpZed');
-  const [canvasContent, setCanvasContent] = useState(null);
-  const [canvasTitle, setCanvasTitle] = useState(null);
-  const [canvasMode, setCanvasMode] = useState(false); // modo canvas persistente
-  const [activeLLMBadge, setActiveLLMBadge] = useState(null); // { label, modelId, provider }
+  const [driveFolderId, setDriveFolderId] = useState(
+    () => localStorage.getItem('chamsa_drive_folder') || '1eWosMBtk9N5tICSKLETbeECw9qlSpZed'
+  );
+
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const PROVIDER_LABELS = { openai: 'OpenAI', anthropic: 'Anthropic', groq: 'Groq', google: 'Google AI', mistral: 'Mistral AI', together: 'Together AI' };
+  const { messages, setMessages, setMessagesAndPersist, resetMessages } = useChatMessages(activeChatId);
+  const {
+    manualModel, setManualModel,
+    activeModel, activeLLMBadge,
+    resolveModel, updateBadgeFromConfig,
+  } = useLLMConfig();
+  const {
+    canvasContent, canvasTitle, canvasMode,
+    openCanvas, closeCanvas, resetCanvas, toggleCanvasMode,
+  } = useCanvasState();
 
+  // Sync session on switch
   useEffect(() => {
-    if (activeChat?.messages) {
-      setMessages(activeChat.messages);
-    }
+    if (activeChat?.messages) resetMessages(activeChat.messages);
+    else resetMessages([]);
     setUsageLog([]);
-    // Reset canvas state when switching sessions
-    setCanvasContent(null);
-    setCanvasTitle(null);
-    setCanvasMode(false);
+    closeCanvas();
   }, [activeChatId]);
 
-  // Show badge immediately based on active custom LLM config
-  useEffect(() => {
-    base44.entities.UserLLMConfig.filter({ is_active: true }).then((configs) => {
-      if (configs?.length > 0) {
-        const cfg = configs[0];
-        setActiveLLMBadge({
-          label: PROVIDER_LABELS[cfg.provider] || cfg.provider,
-          modelId: cfg.model_id,
-          provider: cfg.provider,
-        });
-      } else {
-        setActiveLLMBadge(null);
-      }
-    }).catch(() => setActiveLLMBadge(null));
-  }, []);
-
+  // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
 
-  const updateChatMutation = useMutation({
-    mutationFn: (newMessages) => base44.entities.ChatSession.update(activeChatId, { messages: newMessages }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['chatSessions'] }),
-  });
-
-  const handleSaveDriveFolder = (id) => {
+  const handleSaveDriveFolder = useCallback((id) => {
     setDriveFolderId(id);
     localStorage.setItem('chamsa_drive_folder', id);
-  };
+  }, []);
 
-  const sendMessage = async (text) => {
+  const sendMessage = useCallback(async (text) => {
     if (!activeChatId || isLoading) return;
 
     const userMsg = { role: 'user', content: text, timestamp: new Date().toISOString() };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setIsLoading(true);
+    resetCanvas();
 
-    // Reset canvas panel on every new message
-    setCanvasContent(null);
-    setCanvasTitle(null);
-
-    // Update session title with the first user message snippet
+    // Auto-title on first user message
     const userMessages = newMessages.filter(m => m.role === 'user');
     if (userMessages.length === 1) {
       const snippet = text.replace(/\s+/g, ' ').trim().slice(0, 50);
@@ -123,13 +105,12 @@ export default function Chat() {
       .filter(m => m.role !== 'data-block')
       .map(m => ({ role: m.role, content: m.content }));
 
-    // Include data blocks as context
     const dataBlocks = newMessages
       .filter(m => m.role === 'data-block')
       .map(m => `[DADO CLÍNICO: ${m.title}]\n${m.content}`)
       .join('\n\n');
 
-    // Fetch active custom skills for prompt injection
+    // Active skills
     let skillsContext = '';
     try {
       const allSkills = await base44.entities.CustomSkill.list('-created_date', 50);
@@ -138,11 +119,9 @@ export default function Chat() {
         skillsContext = '\n\n--- SKILLS PERSONALIZADAS ATIVAS ---\n' +
           activeSkills.map(s => `[SKILL: ${s.title}]\n${s.prompt_template}`).join('\n\n');
       }
-    } catch (_) {
-      // Skills unavailable — proceed without
-    }
+    } catch (_) {}
 
-    // RAG: Semantic search — retrieve only relevant chunks instead of full dump
+    // RAG semantic search
     let driveContext = '';
     let hasVectorContext = false;
     if (driveFolderId) {
@@ -161,9 +140,7 @@ export default function Chat() {
               .map(c => `[${c.source_name} — sim: ${c.score.toFixed(2)}]\n${c.chunk_text}`)
               .join('\n\n---\n\n');
         }
-      } catch (_) {
-        // RAG unavailable — fallback silently
-      }
+      } catch (_) {}
     }
 
     const canvasModeInstruction = canvasMode
@@ -176,81 +153,62 @@ export default function Chat() {
 
     const llmMessages = [
       { role: 'system', content: fullPrompt },
-      ...apiMessages
+      ...apiMessages,
     ];
 
     const promptText = llmMessages.map(m => `${m.role}: ${m.content}`).join('\n');
 
-    // Model routing: manual override or auto-detect (RAG-aware)
     const hasDataBlocks = newMessages.some(m => m.role === 'data-block');
-    const chosenModel = manualModel || detectModel(text, hasDataBlocks, hasVectorContext);
-    setActiveModel(chosenModel);
+    const chosenModel = resolveModel(text, hasDataBlocks, hasVectorContext);
 
     try {
       const modelMeta = MODELS.find(m => m.id === chosenModel) || MODELS[0];
       let responseContent;
-
       let inputTokens = 0;
       let outputTokens = 0;
 
-      // Check if user has their own active LLM config
-      let userHasCustomLLM = false;
+      // Check for custom LLM
       let activeUserConfig = null;
       try {
         const userConfigs = await base44.entities.UserLLMConfig.filter({ is_active: true });
-        if (userConfigs?.length > 0) {
-          userHasCustomLLM = true;
-          activeUserConfig = userConfigs[0];
-        }
+        if (userConfigs?.length > 0) activeUserConfig = userConfigs[0];
       } catch (_) {}
 
-      if (userHasCustomLLM && activeUserConfig) {
-        // Use user's own API key via backend function
+      if (activeUserConfig) {
         const res = await base44.functions.invoke('invokeCustomLLM', { messages: llmMessages });
         responseContent = res.data.content;
         inputTokens = res.data.usage?.prompt_tokens || Math.round(promptText.length / 4);
         outputTokens = res.data.usage?.completion_tokens || Math.round(responseContent.length / 4);
-        // Set badge for custom LLM
-        const PROVIDER_LABELS = { openai: 'OpenAI', anthropic: 'Anthropic', groq: 'Groq', google: 'Google AI', mistral: 'Mistral AI', together: 'Together AI' };
-        setActiveLLMBadge({
-          label: PROVIDER_LABELS[activeUserConfig.provider] || activeUserConfig.provider,
-          modelId: activeUserConfig.model_id,
-          provider: activeUserConfig.provider,
-        });
+        updateBadgeFromConfig(activeUserConfig);
       } else if (modelMeta.provider === 'custom') {
-        // Route to Groq via backend function (Llama 3.3 70B)
         const res = await base44.functions.invoke('callLlama3', { messages: llmMessages });
         responseContent = res.data.content;
         inputTokens = res.data.usage?.prompt_tokens || Math.round(promptText.length / 4);
         outputTokens = res.data.usage?.completion_tokens || Math.round(responseContent.length / 4);
-        setActiveLLMBadge(null);
+        updateBadgeFromConfig(null);
       } else {
-        // Native InvokeLLM (Claude, GPT)
         responseContent = await base44.integrations.Core.InvokeLLM({
           prompt: promptText,
-          model: chosenModel
+          model: chosenModel,
         });
         inputTokens = Math.round(promptText.length / 4);
         outputTokens = Math.round(responseContent.length / 4);
-        setActiveLLMBadge(null); // modelo nativo, sem badge custom
+        updateBadgeFromConfig(null);
       }
 
-      // Extract canvas content if present — robust multi-quote regex
+      // Extract canvas
       const canvasMatch = responseContent.match(/<CANVAS[^>]*title\s*=\s*["'\u201c\u201d]([^"'\u201c\u201d\n]*)["'\u201c\u201d][^>]*>([\s\S]*?)<\/CANVAS>/i);
-      // Always strip <CANVAS> tags from the chat message body first
       responseContent = responseContent.replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '').trim();
-      // Only show canvas panel if user explicitly enabled canvas mode
+
       if (canvasMatch && canvasMode) {
-        setCanvasTitle(canvasMatch[1].trim());
-        setCanvasContent(canvasMatch[2].trim());
-        // If LLM produced no summary text alongside the canvas, generate a tidy fallback
+        openCanvas(canvasMatch[1].trim(), canvasMatch[2].trim());
         if (responseContent === '') {
           const docTitle = canvasMatch[1].trim() || 'Canvas';
           responseContent = `📄 O documento **"${docTitle}"** foi gerado e está disponível no painel lateral.`;
         }
       }
 
-      // Extract search prompt suggestion if present
+      // Extract search suggestion
       let extractedSearchPrompt = null;
       const searchMatch = responseContent.match(/<SEARCH_PROMPT>([\s\S]*?)<\/SEARCH_PROMPT>/);
       if (searchMatch?.[1]) {
@@ -258,14 +216,16 @@ export default function Chat() {
         responseContent = responseContent.replace(/<SEARCH_PROMPT>[\s\S]*?<\/SEARCH_PROMPT>/g, '').trim();
       }
 
-      // Track usage (in-session)
+      // Track usage
       setUsageLog(prev => [...prev, { modelId: chosenModel, inputTokens, outputTokens }]);
 
-      // Persist usage to database
+      // Persist usage
       const now = new Date();
-      const dateKey = now.toISOString().slice(0, 10);
-      const monthKey = now.toISOString().slice(0, 7);
-      const rates = { 'claude_sonnet_4_6': { input: 0.003, output: 0.015 }, 'llama-3.3-70b-versatile': { input: 0.0001, output: 0.0001 }, 'gpt_5_mini': { input: 0.00015, output: 0.0006 } };
+      const rates = {
+        'claude_sonnet_4_6': { input: 0.003, output: 0.015 },
+        'llama-3.3-70b-versatile': { input: 0.0001, output: 0.0001 },
+        'gpt_5_mini': { input: 0.00015, output: 0.0006 },
+      };
       const r = rates[chosenModel] || { input: 0.001, output: 0.002 };
       const estimatedCost = (inputTokens / 1000) * r.input + (outputTokens / 1000) * r.output;
       const modelMeta2 = MODELS.find(m => m.id === chosenModel);
@@ -276,47 +236,47 @@ export default function Chat() {
         output_tokens: outputTokens,
         estimated_cost_usd: estimatedCost,
         session_id: activeChatId,
-        date_key: dateKey,
-        month_key: monthKey,
+        date_key: now.toISOString().slice(0, 10),
+        month_key: now.toISOString().slice(0, 7),
       });
 
-      const assistantMsg = { role: 'assistant', content: responseContent, timestamp: new Date().toISOString(), searchPrompt: extractedSearchPrompt };
+      const assistantMsg = {
+        role: 'assistant',
+        content: responseContent,
+        timestamp: new Date().toISOString(),
+        searchPrompt: extractedSearchPrompt,
+      };
       const updatedMessages = [...newMessages, assistantMsg];
-      setMessages(updatedMessages);
-      updateChatMutation.mutate(updatedMessages);
+      setMessagesAndPersist(updatedMessages);
     } catch (error) {
-      const errorMsg = { role: 'assistant', content: `⚠️ **Aviso de Sistema:** ${error.message}`, timestamp: new Date().toISOString() };
-      const updatedMessages = [...newMessages, errorMsg];
-      setMessages(updatedMessages);
+      const errorMsg = {
+        role: 'assistant',
+        content: `⚠️ **Aviso de Sistema:** ${error.message}`,
+        timestamp: new Date().toISOString(),
+      };
+      setMessagesAndPersist([...newMessages, errorMsg]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeChatId, isLoading, messages, driveFolderId, canvasMode]);
 
-  const handleTool = (toolId) => {
-    if (toolId === 'canvas') {
-      setCanvasMode(prev => !prev);
-    }
-  };
+  const handleTool = useCallback((toolId) => {
+    if (toolId === 'canvas') toggleCanvasMode();
+  }, [toggleCanvasMode]);
 
-  const handlePasteData = (title, content) => {
+  const handlePasteData = useCallback((title, content) => {
     const dataMsg = { role: 'data-block', title, content, timestamp: new Date().toISOString() };
     const newMessages = [...messages, dataMsg];
     setMessages(newMessages);
-    updateChatMutation.mutate(newMessages);
-
-    // Auto-analyze
     setTimeout(() => {
       sendMessage(`Analise os dados clínicos "${title}" que acabei de fornecer. Faça uma análise completa com Red Flags, hipóteses e recomendações.`);
     }, 500);
-  };
+  }, [messages, sendMessage]);
 
   if (!activeChat) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground text-sm">Crie uma nova sessão para começar.</p>
-        </div>
+        <p className="text-muted-foreground text-sm">Crie uma nova sessão para começar.</p>
       </div>
     );
   }
@@ -325,92 +285,88 @@ export default function Chat() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* ── Chat Column ── */}
+      {/* Chat Column */}
       <div className={`flex flex-col min-w-0 transition-all duration-300 ${canvasContent ? 'w-[400px] shrink-0 border-r border-border' : 'flex-1'}`}>
-      <LLMUsageBar usageLog={usageLog} />
+        <LLMUsageBar usageLog={usageLog} />
 
-      {/* Model routing bar */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-border bg-card/50 text-xs">
-        <div className="flex items-center gap-2">
-          <DriveSourceConfig folderId={driveFolderId} onSave={handleSaveDriveFolder} />
-          <span className="text-muted-foreground/50 font-mono hidden sm:inline">
-            {manualModel ? '🔒 Modelo fixo' : '🤖 Auto-routing ativo'}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          {activeLLMBadge && (
-            <span className="flex items-center gap-1.5 bg-indigo-500/10 text-indigo-500 border border-indigo-400/30 px-2 py-0.5 rounded-full text-[10px] font-semibold animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block" />
-              {activeLLMBadge.label} · {activeLLMBadge.modelId}
+        {/* Model routing bar */}
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-border bg-card/50 text-xs">
+          <div className="flex items-center gap-2">
+            <DriveSourceConfig folderId={driveFolderId} onSave={handleSaveDriveFolder} />
+            <span className="text-muted-foreground/50 font-mono hidden sm:inline">
+              {manualModel ? '🔒 Modelo fixo' : '🤖 Auto-routing ativo'}
             </span>
-          )}
-          {!manualModel && (
-            <button
-              onClick={() => setManualModel(activeModel)}
-              className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 hidden sm:block"
-            >
-              fixar modelo
-            </button>
-          )}
-          {manualModel && (
-            <button
-              onClick={() => setManualModel(null)}
-              className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 hidden sm:block"
-            >
-              voltar auto
-            </button>
-          )}
-          <ModelSelector
-            selectedModel={modelForDisplay}
-            onChange={(id) => setManualModel(id)}
-            autoMode={!manualModel}
-          />
-        </div>
-      </div>
-
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6">
-        <div className="max-w-2xl mx-auto space-y-4">
-          {messages.map((msg, i) => (
-            <ChatMessage
-              key={i}
-              message={msg}
-              onRetryWithoutCanvas={
-                msg.role === 'assistant' && canvasContent && i === messages.length - 1
-                  ? () => {
-                      setCanvasMode(false);
-                      setCanvasContent(null);
-                      setCanvasTitle(null);
-                    }
-                  : undefined
-              }
+          </div>
+          <div className="flex items-center gap-2">
+            {activeLLMBadge && (
+              <span className="flex items-center gap-1.5 bg-indigo-500/10 text-indigo-500 border border-indigo-400/30 px-2 py-0.5 rounded-full text-[10px] font-semibold animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block" />
+                {activeLLMBadge.label} · {activeLLMBadge.modelId}
+              </span>
+            )}
+            {!manualModel && (
+              <button
+                onClick={() => setManualModel(activeModel)}
+                className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 hidden sm:block"
+              >
+                fixar modelo
+              </button>
+            )}
+            {manualModel && (
+              <button
+                onClick={() => setManualModel(null)}
+                className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 hidden sm:block"
+              >
+                voltar auto
+              </button>
+            )}
+            <ModelSelector
+              selectedModel={modelForDisplay}
+              onChange={(id) => setManualModel(id)}
+              autoMode={!manualModel}
             />
-          ))}
-          {isLoading && <ThinkingIndicator />}
+          </div>
         </div>
+
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6">
+          <div className="max-w-2xl mx-auto space-y-4">
+            {messages.map((msg, i) => (
+              <ChatMessage
+                key={i}
+                message={msg}
+                onRetryWithoutCanvas={
+                  msg.role === 'assistant' && canvasContent && i === messages.length - 1
+                    ? () => closeCanvas()
+                    : undefined
+                }
+              />
+            ))}
+            {isLoading && <ThinkingIndicator />}
+          </div>
+        </div>
+
+        <ChatInput
+          onSend={sendMessage}
+          onPaste={() => setShowPaste(true)}
+          onTool={handleTool}
+          isLoading={isLoading}
+          canvasMode={canvasMode}
+        />
+
+        <PasteDataModal
+          open={showPaste}
+          onClose={() => setShowPaste(false)}
+          onSubmit={handlePasteData}
+        />
       </div>
 
-      <ChatInput
-        onSend={sendMessage}
-        onPaste={() => setShowPaste(true)}
-        onTool={handleTool}
-        isLoading={isLoading}
-        canvasMode={canvasMode}
-      />
-
-      <PasteDataModal
-        open={showPaste}
-        onClose={() => setShowPaste(false)}
-        onSubmit={handlePasteData}
-      />
-      </div>
-
-      {/* ── Canvas Panel — ocupa o restante da tela ── */}
+      {/* Canvas Panel */}
       {canvasContent && (
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <CanvasPanel
             content={canvasContent}
             title={canvasTitle}
-            onClose={() => { setCanvasContent(null); setCanvasTitle(null); setCanvasMode(false); }}
+            onClose={closeCanvas}
           />
         </div>
       )}

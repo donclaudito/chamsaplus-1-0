@@ -9,7 +9,7 @@ const stages = [
   '✅ Síntese — Consolidando resposta...',
 ];
 
-export default function ThinkingIndicator() {
+const ThinkingIndicator = React.memo(function ThinkingIndicator() {
   const [stage, setStage] = useState(0);
 
   useEffect(() => {
@@ -46,4 +46,6 @@ export default function ThinkingIndicator() {
       </div>
     </div>
   );
-}
+});
+
+export default ThinkingIndicator;

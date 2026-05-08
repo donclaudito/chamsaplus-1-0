@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import SearchSuggestion from './SearchSuggestion';
 
-export default function ChatMessage({ message, onRetryWithoutCanvas }) {
+const ChatMessage = React.memo(function ChatMessage({ message, onRetryWithoutCanvas }) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState(null); // 'up' | 'down' | null
   const isAssistant = message.role === 'assistant';
@@ -179,4 +179,6 @@ export default function ChatMessage({ message, onRetryWithoutCanvas }) {
       )}
     </motion.div>
   );
-}
+});
+
+export default ChatMessage;
