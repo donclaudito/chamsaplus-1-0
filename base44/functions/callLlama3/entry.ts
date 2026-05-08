@@ -31,7 +31,13 @@ Deno.serve(async (req) => {
     }
 
     const content = data.choices[0].message.content;
-    return Response.json({ content });
+    return Response.json({
+      content,
+      usage: {
+        prompt_tokens: data.usage?.prompt_tokens || 0,
+        completion_tokens: data.usage?.completion_tokens || 0,
+      },
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

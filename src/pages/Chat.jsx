@@ -236,6 +236,7 @@ export default function Chat() {
         output_tokens: outputTokens,
         estimated_cost_usd: estimatedCost,
         session_id: activeChatId,
+        user_id: newMessages.find(m => m.role === 'user')?.created_by || '',
         date_key: now.toISOString().slice(0, 10),
         month_key: now.toISOString().slice(0, 7),
       });

@@ -1,16 +1,15 @@
 /**
  * vectorizeKnowledge
- * Lê arquivos de uma pasta do Google Drive, divide em chunks,
- * gera pseudo-embeddings via TF-IDF (normalizado) e salva na entidade KnowledgeVector.
+ * Lê arquivos de uma pasta do Google Drive (com paginação),
+ * divide em chunks, gera pseudo-embeddings e salva na entidade KnowledgeVector.
  * Usa hash do conteúdo para evitar re-processar chunks não alterados.
- * Não requer chave de API de embedding externa.
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const CHUNK_SIZE = 900;    // chars (~220 tokens)
+const CHUNK_SIZE = 900;
 const CHUNK_OVERLAP = 150;
+const PAGE_SIZE = 50; // paginação Drive
 
-// Split text into overlapping chunks
 function chunkText(text, size = CHUNK_SIZE, overlap = CHUNK_OVERLAP) {
   const chunks = [];
   let start = 0;
@@ -23,33 +22,27 @@ function chunkText(text, size = CHUNK_SIZE, overlap = CHUNK_OVERLAP) {
   return chunks.filter(c => c.length > 60);
 }
 
-// SHA-256 short hash for deduplication
 async function hashText(text) {
   const data = new TextEncoder().encode(text);
   const buf = await crypto.subtle.digest('SHA-256', data);
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
 }
 
-// Tokenize: lowercase, remove punctuation, split
 function tokenize(text) {
   return text.toLowerCase().replace(/[^\w\sáéíóúâêôàãõüç]/g, ' ').split(/\s+/).filter(t => t.length > 2);
 }
 
-// Build TF vector for a chunk (term -> count)
 function termFreq(tokens) {
   const tf = {};
   for (const t of tokens) tf[t] = (tf[t] || 0) + 1;
   return tf;
 }
 
-// Convert TF map to a sparse embedding array using a vocabulary
-// We use a fixed-size projection to a 256-dim vector via hashing trick
 function hashEmbedding(text, dims = 256) {
   const tokens = tokenize(text);
   const tf = termFreq(tokens);
   const vec = new Float64Array(dims);
   for (const [term, count] of Object.entries(tf)) {
-    // Hash the term to a dimension index
     let h = 0;
     for (let i = 0; i < term.length; i++) {
       h = (Math.imul(31, h) + term.charCodeAt(i)) >>> 0;
@@ -58,12 +51,26 @@ function hashEmbedding(text, dims = 256) {
     const sign = ((h >> 8) & 1) === 0 ? 1 : -1;
     vec[idx] += sign * count;
   }
-  // L2 normalize
   let norm = 0;
   for (let i = 0; i < dims; i++) norm += vec[i] * vec[i];
   norm = Math.sqrt(norm);
   if (norm > 0) for (let i = 0; i < dims; i++) vec[i] /= norm;
   return Array.from(vec);
+}
+
+// Fetch ALL files in a folder with pagination
+async function listAllFiles(folder_id, headers) {
+  const files = [];
+  let pageToken = null;
+  do {
+    const pageParam = pageToken ? `&pageToken=${pageToken}` : '';
+    const url = `https://www.googleapis.com/drive/v3/files?q='${folder_id}'+in+parents+and+trashed=false&fields=files(id,name,mimeType),nextPageToken&pageSize=${PAGE_SIZE}${pageParam}`;
+    const res = await fetch(url, { headers });
+    const data = await res.json();
+    if (data.files) files.push(...data.files);
+    pageToken = data.nextPageToken || null;
+  } while (pageToken);
+  return files;
 }
 
 Deno.serve(async (req) => {
@@ -78,11 +85,8 @@ Deno.serve(async (req) => {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googledrive');
     const headers = { Authorization: `Bearer ${accessToken}` };
 
-    // List files in folder
-    const listUrl = `https://www.googleapis.com/drive/v3/files?q='${folder_id}'+in+parents+and+trashed=false&fields=files(id,name,mimeType)&pageSize=30`;
-    const listRes = await fetch(listUrl, { headers });
-    const listData = await listRes.json();
-    const files = listData.files || [];
+    // List ALL files with pagination
+    const files = await listAllFiles(folder_id, headers);
 
     let totalChunks = 0;
     let skippedChunks = 0;
@@ -112,11 +116,9 @@ Deno.serve(async (req) => {
       const chunks = chunkText(content);
       totalChunks += chunks.length;
 
-      // Get existing hashes for this source to deduplicate
       const existing = await base44.asServiceRole.entities.KnowledgeVector.filter({ source_id: file.id });
       const existingHashes = new Set(existing.map(e => e.content_hash));
 
-      // Collect new chunks first (store text to avoid index closure issues)
       const toCreate = [];
       for (let i = 0; i < chunks.length; i++) {
         const text = chunks[i];
@@ -125,7 +127,6 @@ Deno.serve(async (req) => {
         toCreate.push({ i, hash, text, embedding: hashEmbedding(text) });
       }
 
-      // Bulk create in batches of 5 with small delay to avoid rate limit
       const BATCH = 5;
       for (let b = 0; b < toCreate.length; b += BATCH) {
         const batch = toCreate.slice(b, b + BATCH);

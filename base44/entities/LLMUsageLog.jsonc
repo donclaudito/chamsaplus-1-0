@@ -26,6 +26,10 @@
       "type": "string",
       "description": "ID da sess\u00e3o de chat"
     },
+    "user_id": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio que gerou o consumo"
+    },
     "date_key": {
       "type": "string",
       "description": "Data no formato YYYY-MM-DD para agrupamento di\u00e1rio"
