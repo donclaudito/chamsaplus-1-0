@@ -235,14 +235,20 @@ export default function Chat() {
         setActiveLLMBadge(null); // modelo nativo, sem badge custom
       }
 
-      // Extract canvas content if present — robust multi-quote regex
-      const canvasMatch = responseContent.match(/<CANVAS[^>]*title\s*=\s*["'\u201c\u201d]([^"'\u201c\u201d\n]*)["'\u201c\u201d][^>]*>([\s\S]*?)<\/CANVAS>/i);
-      // Always strip <CANVAS> tags from the chat message body first
-      responseContent = responseContent.replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '').trim();
-      // Only show canvas panel if user explicitly enabled canvas mode
-      if (canvasMatch && canvasMode) {
+      // Extract canvas content if present — ultra-permissive regex handles any quote style or extra attrs
+      const canvasMatch = responseContent.match(/<CANVAS[\s\S]*?title\s*=\s*["""'']?([^"''\n>]*?)["""'']?\s*[^>]*?>([\s\S]*?)<\/CANVAS>/i);
+      // Always strip ALL <CANVAS> variants from the chat message body
+      responseContent = responseContent
+        .replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '')
+        .replace(/<CANVAS[^>]*>/gi, '')
+        .replace(/<\/CANVAS>/gi, '')
+        .trim();
+
+      // Auto-open canvas panel whenever LLM produces canvas content (no manual toggle required)
+      if (canvasMatch) {
         setCanvasTitle(canvasMatch[1].trim());
         setCanvasContent(canvasMatch[2].trim());
+        setCanvasMode(true); // auto-activate split view
         // If LLM produced no summary text alongside the canvas, generate a tidy fallback
         if (responseContent === '') {
           const docTitle = canvasMatch[1].trim() || 'Canvas';
