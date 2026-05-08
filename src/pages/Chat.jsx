@@ -9,6 +9,7 @@ import PasteDataModal from '@/components/chat/PasteDataModal';
 import ModelSelector from '@/components/chat/ModelSelector';
 import LLMUsageBar from '@/components/chat/LLMUsageBar.jsx';
 import DriveSourceConfig from '@/components/chat/DriveSourceConfig';
+import CanvasPanel from '@/components/chat/CanvasPanel';
 import { detectModel, getModelById, MODELS } from '@/lib/modelRouter';
 
 const SYSTEM_PROMPT = `Você é Chamsa Isa v4.1, a Estrategista Clínica de Elite e extensão da mente do Dr. Claudio.
@@ -23,7 +24,8 @@ DIRETRIZES CORE:
 7. AUTORIDADE: Não sugira para o médico "ler arquivos". Você já leu — entregue a resposta pronta com autoridade técnica.
 8. TOM: Consultivo, sintético e sagaz. Atuação como sintetizadora de inteligência clínica.
 9. FORMATO: Use markdown com headers, listas e destaques. Sinalize **Red Flags** 🚨 no topo se detectar riscos.
-10. PESQUISA EXTERNA: Se a informação solicitada NÃO estiver disponível em seus dados ou contexto, admita brevemente e gere UMA string de pesquisa otimizada delimitada por <SEARCH_PROMPT>query aqui</SEARCH_PROMPT>. Exemplo: "Não possuo esses dados. <SEARCH_PROMPT>tratamento cirúrgico colecistite aguda guidelines 2024</SEARCH_PROMPT>"`;
+10. PESQUISA EXTERNA: Se a informação solicitada NÃO estiver disponível em seus dados ou contexto, admita brevemente e gere UMA string de pesquisa otimizada delimitada por <SEARCH_PROMPT>query aqui</SEARCH_PROMPT>. Exemplo: "Não possuo esses dados. <SEARCH_PROMPT>tratamento cirúrgico colecistite aguda guidelines 2024</SEARCH_PROMPT>"
+11. CANVAS: Quando produzir conteúdo extenso que se beneficia de leitura separada (relatório completo, protocolo detalhado, tabela comparativa, sumário de laudo), coloque-o dentro de <CANVAS title="Título do Conteúdo">conteúdo markdown aqui</CANVAS>. O canvas abre automaticamente um painel lateral para o usuário. No chat, inclua apenas um resumo curto.`;
 
 export default function Chat() {
   const { activeChat, activeChatId } = useOutletContext();
@@ -34,6 +36,8 @@ export default function Chat() {
   const [activeModel, setActiveModel] = useState('claude_sonnet_4_6');
   const [usageLog, setUsageLog] = useState([]);
   const [driveFolderId, setDriveFolderId] = useState(() => localStorage.getItem('chamsa_drive_folder') || '1eWosMBtk9N5tICSKLETbeECw9qlSpZed');
+  const [canvasContent, setCanvasContent] = useState(null);
+  const [canvasTitle, setCanvasTitle] = useState(null);
   const [activeLLMBadge, setActiveLLMBadge] = useState(null); // { label, modelId, provider }
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
@@ -199,6 +203,14 @@ export default function Chat() {
         setActiveLLMBadge(null); // modelo nativo, sem badge custom
       }
 
+      // Extract canvas content if present
+      const canvasMatch = responseContent.match(/<CANVAS title="([^"]*)">([\s\S]*?)<\/CANVAS>/);
+      if (canvasMatch) {
+        setCanvasTitle(canvasMatch[1].trim());
+        setCanvasContent(canvasMatch[2].trim());
+        responseContent = responseContent.replace(/<CANVAS title="[^"]*">[\s\S]*?<\/CANVAS>/g, '').trim();
+      }
+
       // Extract search prompt suggestion if present
       let extractedSearchPrompt = null;
       const searchMatch = responseContent.match(/<SEARCH_PROMPT>([\s\S]*?)<\/SEARCH_PROMPT>/);
@@ -267,7 +279,9 @@ export default function Chat() {
   const modelForDisplay = manualModel || activeModel;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full overflow-hidden">
+      {/* Main Chat Column */}
+      <div className="flex flex-col flex-1 min-w-0">
       <LLMUsageBar usageLog={usageLog} />
 
       {/* Model routing bar */}
@@ -329,6 +343,18 @@ export default function Chat() {
         onClose={() => setShowPaste(false)}
         onSubmit={handlePasteData}
       />
+      </div>
+
+      {/* Canvas Panel */}
+      {canvasContent && (
+        <div className="w-[420px] shrink-0 hidden md:flex flex-col border-l border-border">
+          <CanvasPanel
+            content={canvasContent}
+            title={canvasTitle}
+            onClose={() => { setCanvasContent(null); setCanvasTitle(null); }}
+          />
+        </div>
+      )}
     </div>
   );
 }
