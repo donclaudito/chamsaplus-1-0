@@ -12,7 +12,7 @@ const tools = [
   },
 ];
 
-export default function ChatInput({ onSend, onPaste, onTool, isLoading }) {
+export default function ChatInput({ onSend, onPaste, onTool, isLoading, canvasMode }) {
   const [input, setInput] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const textareaRef = useRef(null);
@@ -59,6 +59,19 @@ export default function ChatInput({ onSend, onPaste, onTool, isLoading }) {
   return (
     <div className="border-t border-border bg-card/80 backdrop-blur-sm p-3 sm:p-4">
       <div className="max-w-3xl mx-auto">
+        {/* Canvas mode badge */}
+        {canvasMode && (
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <button
+              onClick={() => onTool && onTool('canvas')}
+              className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 text-primary text-[11px] font-semibold px-3 py-1 rounded-full hover:bg-primary/20 transition-colors"
+            >
+              <LayoutPanelLeft className="w-3 h-3" />
+              Canvas
+              <span className="ml-1 text-primary/60 hover:text-primary">×</span>
+            </button>
+          </div>
+        )}
         <div className="flex items-end gap-2 bg-muted/50 border border-border rounded-2xl p-2">
           {/* Paste button */}
           <button

@@ -38,6 +38,7 @@ export default function Chat() {
   const [driveFolderId, setDriveFolderId] = useState(() => localStorage.getItem('chamsa_drive_folder') || '1eWosMBtk9N5tICSKLETbeECw9qlSpZed');
   const [canvasContent, setCanvasContent] = useState(null);
   const [canvasTitle, setCanvasTitle] = useState(null);
+  const [canvasMode, setCanvasMode] = useState(false); // modo canvas persistente
   const [activeLLMBadge, setActiveLLMBadge] = useState(null); // { label, modelId, provider }
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
@@ -147,9 +148,13 @@ export default function Chat() {
       }
     }
 
+    const canvasModeInstruction = canvasMode
+      ? '\n\n⚠️ MODO CANVAS ATIVO: Toda resposta desta sessão DEVE obrigatoriamente ser encapsulada na tag <CANVAS title="Título Descritivo">conteúdo completo aqui</CANVAS>. Sem exceções.'
+      : '';
+
     const fullPrompt = dataBlocks
-      ? `${SYSTEM_PROMPT}${skillsContext}\n\nDADOS CLÍNICOS INDEXADOS:\n${dataBlocks}${driveContext}`
-      : `${SYSTEM_PROMPT}${skillsContext}${driveContext}`;
+      ? `${SYSTEM_PROMPT}${skillsContext}${canvasModeInstruction}\n\nDADOS CLÍNICOS INDEXADOS:\n${dataBlocks}${driveContext}`
+      : `${SYSTEM_PROMPT}${skillsContext}${canvasModeInstruction}${driveContext}`;
 
     const llmMessages = [
       { role: 'system', content: fullPrompt },
@@ -265,13 +270,20 @@ export default function Chat() {
 
   const handleTool = (toolId) => {
     if (toolId === 'canvas') {
-      const lastMessages = messages.slice(-6).filter(m => m.role !== 'data-block');
-      const topic = lastMessages.length > 0
-        ? lastMessages.map(m => `${m.role === 'user' ? 'Usuário' : 'Chamsa'}: ${m.content.slice(0, 200)}`).join('\n')
-        : 'a conversa atual';
-      sendMessage(
-        `Com base no tópico da nossa conversa, gere agora um documento Canvas completo e estruturado — relatório detalhado, tabelas, análise clínica completa — obrigatoriamente dentro da tag <CANVAS title="Resumo Clínico Estruturado">...</CANVAS>. Contexto:\n${topic}`
-      );
+      if (canvasMode) {
+        // Desativar modo canvas
+        setCanvasMode(false);
+      } else {
+        // Ativar modo canvas e disparar primeiro canvas
+        setCanvasMode(true);
+        const lastMessages = messages.slice(-6).filter(m => m.role !== 'data-block');
+        const topic = lastMessages.length > 0
+          ? lastMessages.map(m => `${m.role === 'user' ? 'Usuário' : 'Chamsa'}: ${m.content.slice(0, 200)}`).join('\n')
+          : 'a conversa atual';
+        sendMessage(
+          `Com base no tópico da nossa conversa, gere agora um documento Canvas completo e estruturado — relatório detalhado, tabelas, análise clínica completa — obrigatoriamente dentro da tag <CANVAS title="Resumo Clínico Estruturado">...</CANVAS>. Contexto:\n${topic}`
+        );
+      }
     }
   };
 
@@ -358,6 +370,7 @@ export default function Chat() {
         onPaste={() => setShowPaste(true)}
         onTool={handleTool}
         isLoading={isLoading}
+        canvasMode={canvasMode}
       />
 
       <PasteDataModal
