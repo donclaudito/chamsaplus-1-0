@@ -221,12 +221,19 @@ export default function Chat() {
         setActiveLLMBadge(null); // modelo nativo, sem badge custom
       }
 
+      // Always reset canvas before processing new response
+      setCanvasContent(null);
+      setCanvasTitle(null);
+
       // Extract canvas content if present — support straight and curly quotes
       const canvasMatch = responseContent.match(/<CANVAS\s+title=[""\u201c\u201d]([^""\u201c\u201d]*)[""\u201c\u201d]>([\s\S]*?)<\/CANVAS>/i);
       if (canvasMatch) {
         setCanvasTitle(canvasMatch[1].trim());
         setCanvasContent(canvasMatch[2].trim());
         responseContent = responseContent.replace(/<CANVAS\s+title=[""\u201c\u201d][^""\u201c\u201d]*[""\u201c\u201d]>[\s\S]*?<\/CANVAS>/gi, '').trim();
+      } else {
+        // Strip any raw <CANVAS> tags that weren't parsed correctly
+        responseContent = responseContent.replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '').trim();
       }
 
       // Extract search prompt suggestion if present
