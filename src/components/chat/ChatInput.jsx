@@ -1,10 +1,32 @@
-import React, { useState, useRef } from 'react';
-import { Send, ClipboardPaste, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, ClipboardPaste, Loader2, SlidersHorizontal, LayoutPanelLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AnimatePresence, motion } from 'framer-motion';
 
-export default function ChatInput({ onSend, onPaste, isLoading }) {
+const tools = [
+  {
+    id: 'canvas',
+    icon: LayoutPanelLeft,
+    label: 'Canvas',
+    description: 'Gerar resumo estruturado no painel lateral',
+  },
+];
+
+export default function ChatInput({ onSend, onPaste, onTool, isLoading }) {
   const [input, setInput] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
   const textareaRef = useRef(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
@@ -24,16 +46,21 @@ export default function ChatInput({ onSend, onPaste, isLoading }) {
 
   const handleChange = (e) => {
     setInput(e.target.value);
-    // Auto-resize
     const textarea = e.target;
     textarea.style.height = 'auto';
     textarea.style.height = Math.min(textarea.scrollHeight, 160) + 'px';
+  };
+
+  const handleToolClick = (toolId) => {
+    setMenuOpen(false);
+    onTool && onTool(toolId);
   };
 
   return (
     <div className="border-t border-border bg-card/80 backdrop-blur-sm p-3 sm:p-4">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-end gap-2 bg-muted/50 border border-border rounded-2xl p-2">
+          {/* Paste button */}
           <button
             onClick={onPaste}
             className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all shrink-0"
@@ -41,6 +68,47 @@ export default function ChatInput({ onSend, onPaste, isLoading }) {
           >
             <ClipboardPaste className="w-4 h-4" />
           </button>
+
+          {/* Tools button */}
+          <div className="relative shrink-0" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(v => !v)}
+              className={`p-2 rounded-xl transition-all ${menuOpen ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'}`}
+              title="Ferramentas"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </button>
+
+            <AnimatePresence>
+              {menuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.92, y: 6 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.92, y: 6 }}
+                  transition={{ duration: 0.13 }}
+                  className="absolute bottom-10 left-0 z-50 w-56 bg-popover border border-border rounded-xl shadow-xl overflow-hidden"
+                >
+                  <p className="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Ferramentas
+                  </p>
+                  {tools.map(({ id, icon: Icon, label, description }) => (
+                    <button
+                      key={id}
+                      onClick={() => handleToolClick(id)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
+                    >
+                      <Icon className="w-4 h-4 text-primary shrink-0" />
+                      <div>
+                        <p className="text-xs font-semibold text-foreground">{label}</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">{description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           <textarea
             ref={textareaRef}
             value={input}
@@ -49,7 +117,7 @@ export default function ChatInput({ onSend, onPaste, isLoading }) {
             placeholder="Consulte a Chamsa Isa..."
             rows={1}
             className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground/50 py-2 max-h-32 sm:max-h-40"
-            style={{ fontSize: '16px' }} /* prevents iOS zoom on focus */
+            style={{ fontSize: '16px' }}
           />
           <Button
             onClick={handleSend}
