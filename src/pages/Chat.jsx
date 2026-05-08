@@ -25,7 +25,7 @@ DIRETRIZES CORE:
 8. TOM: Consultivo, sintético e sagaz. Atuação como sintetizadora de inteligência clínica.
 9. FORMATO: Use markdown com headers, listas e destaques. Sinalize **Red Flags** 🚨 no topo se detectar riscos.
 10. PESQUISA EXTERNA: Se a informação solicitada NÃO estiver disponível em seus dados ou contexto, admita brevemente e gere UMA string de pesquisa otimizada delimitada por <SEARCH_PROMPT>query aqui</SEARCH_PROMPT>. Exemplo: "Não possuo esses dados. <SEARCH_PROMPT>tratamento cirúrgico colecistite aguda guidelines 2024</SEARCH_PROMPT>"
-11. CANVAS: Quando produzir conteúdo extenso que se beneficia de leitura separada (relatório completo, protocolo detalhado, tabela comparativa, sumário de laudo), coloque-o dentro de <CANVAS title="Título do Conteúdo">conteúdo markdown aqui</CANVAS>. O canvas abre automaticamente um painel lateral para o usuário. No chat, inclua apenas um resumo curto.`;
+11. CANVAS OBRIGATÓRIO: Sempre que produzir conteúdo extenso (mais de 300 palavras, ou relatório, protocolo, tabela, resumo de laudo, prescrição, orientação detalhada), você DEVE obrigatoriamente envolver o conteúdo completo na tag exata: <CANVAS title="Título Descritivo">conteúdo markdown completo aqui</CANVAS> — use exatamente aspas retas (") e a tag exatamente como mostrado. O painel lateral abrirá automaticamente. No corpo do chat coloque APENAS um parágrafo resumido do que foi gerado no canvas.`;
 
 export default function Chat() {
   const { activeChat, activeChatId } = useOutletContext();
@@ -212,12 +212,12 @@ export default function Chat() {
         setActiveLLMBadge(null); // modelo nativo, sem badge custom
       }
 
-      // Extract canvas content if present
-      const canvasMatch = responseContent.match(/<CANVAS title="([^"]*)">([\s\S]*?)<\/CANVAS>/);
+      // Extract canvas content if present — support straight and curly quotes
+      const canvasMatch = responseContent.match(/<CANVAS\s+title=[""\u201c\u201d]([^""\u201c\u201d]*)[""\u201c\u201d]>([\s\S]*?)<\/CANVAS>/i);
       if (canvasMatch) {
         setCanvasTitle(canvasMatch[1].trim());
         setCanvasContent(canvasMatch[2].trim());
-        responseContent = responseContent.replace(/<CANVAS title="[^"]*">[\s\S]*?<\/CANVAS>/g, '').trim();
+        responseContent = responseContent.replace(/<CANVAS\s+title=[""\u201c\u201d][^""\u201c\u201d]*[""\u201c\u201d]>[\s\S]*?<\/CANVAS>/gi, '').trim();
       }
 
       // Extract search prompt suggestion if present
