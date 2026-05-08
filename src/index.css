@@ -133,11 +133,19 @@
   margin-bottom: 0.75em;
 }
 .chamsa-prose strong { font-weight: 700; }
+.chamsa-prose .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1em;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+}
 .chamsa-prose table {
   width: 100%;
+  min-width: 400px;
   border-collapse: collapse;
-  margin-bottom: 1em;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 .chamsa-prose thead tr {
   background: hsl(var(--muted));

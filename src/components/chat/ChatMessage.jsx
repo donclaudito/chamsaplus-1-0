@@ -95,7 +95,16 @@ export default function ChatMessage({ message, onRetryWithoutCanvas }) {
       `}>
         {isAssistant ? (
           <div className="chamsa-prose text-sm">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                table: ({ children }) => (
+                  <div className="table-wrapper">
+                    <table>{children}</table>
+                  </div>
+                )
+              }}
+            >{message.content}</ReactMarkdown>
           </div>
         ) : (
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
