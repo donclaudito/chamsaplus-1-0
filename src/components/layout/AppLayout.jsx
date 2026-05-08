@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Menu, Settings } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -16,12 +16,14 @@ export default function AppLayout() {
   });
 
   const [activeChatId, setActiveChatId] = useState(null);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (chatSessions.length > 0 && !activeChatId) {
+    if (!initializedRef.current && chatSessions.length > 0) {
+      initializedRef.current = true;
       setActiveChatId(chatSessions[0].id);
     }
-  }, [chatSessions, activeChatId]);
+  }, [chatSessions]);
 
   const deleteChatMutation = useMutation({
     mutationFn: (id) => base44.entities.ChatSession.delete(id),
