@@ -13,7 +13,7 @@ export function useCanvasState() {
   const closeCanvas = () => {
     setCanvasContent(null);
     setCanvasTitle(null);
-    setCanvasMode(false);
+    // Não desliga canvasMode ao fechar — usuário precisa desativar manualmente
   };
 
   const resetCanvas = () => {

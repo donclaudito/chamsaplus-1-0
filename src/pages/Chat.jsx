@@ -154,9 +154,14 @@ export default function Chat() {
       outputTokens = usage?.completion_tokens || Math.round(responseContent.length / 4);
       updateBadgeFromConfig(res.data.provider !== 'base44' && res.data.provider !== 'groq' ? { model_id: res.data.model, model_label: res.data.model } : null);
 
-      // Open canvas if content present and canvas mode active
-      if (parsedCanvas && canvasMode) {
-        openCanvas(parsedCanvas.title, parsedCanvas.content);
+      // Open canvas: usa conteúdo parseado ou fallback com a resposta completa
+      if (canvasMode) {
+        if (parsedCanvas) {
+          openCanvas(parsedCanvas.title, parsedCanvas.content);
+        } else {
+          // Fallback: abre o Canvas com a resposta completa mesmo sem tag <CANVAS>
+          openCanvas('Resposta', responseContent);
+        }
       }
 
       // Track usage
