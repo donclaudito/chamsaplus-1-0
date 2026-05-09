@@ -6,14 +6,20 @@ import remarkGfm from 'remark-gfm';
 import SearchSuggestion from './SearchSuggestion';
 import PubMedResults from './PubMedResults';
 
+const stripTags = (content) => (content || '')
+  .replace(/<CANVAS[^>]*>[\s\S]*?<\/CANVAS>/gi, '')
+  .replace(/<SEARCH_PROMPT>[\s\S]*?<\/SEARCH_PROMPT>/gi, '')
+  .trim();
+
 const ChatMessage = React.memo(function ChatMessage({ message, onRetryWithoutCanvas }) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState(null); // 'up' | 'down' | null
   const isAssistant = message.role === 'assistant';
   const isData = message.role === 'data-block';
+  const cleanContent = isAssistant ? stripTags(message.content) : message.content;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(message.content);
+    navigator.clipboard.writeText(cleanContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -25,7 +31,7 @@ const ChatMessage = React.memo(function ChatMessage({ message, onRetryWithoutCan
 
     // Captura o HTML já renderizado da mensagem
     const msgEl = document.getElementById(`chat-msg-${message.timestamp}`);
-    const renderedHTML = msgEl ? msgEl.innerHTML : `<pre style="white-space:pre-wrap">${message.content}</pre>`;
+    const renderedHTML = msgEl ? msgEl.innerHTML : `<pre style="white-space:pre-wrap">${cleanContent}</pre>`;
 
     const win = window.open('', '_blank');
     win.document.write(`<!DOCTYPE html><html><head><title>Chamsa — Resposta Clínica</title>
@@ -115,7 +121,7 @@ const ChatMessage = React.memo(function ChatMessage({ message, onRetryWithoutCan
                   </div>
                 )
               }}
-            >{(message.content || '').replace(/<CANVAS[^>]*>[\s\S]*?<\/CANVAS>/gi, '').replace(/<SEARCH_PROMPT>[\s\S]*?<\/SEARCH_PROMPT>/gi, '').trim()}</ReactMarkdown>
+            >{cleanContent}</ReactMarkdown>
           </div>
         ) : (
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
