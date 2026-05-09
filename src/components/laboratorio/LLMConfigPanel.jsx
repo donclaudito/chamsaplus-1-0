@@ -5,12 +5,17 @@ import { Plus, Trash2, CheckCircle2, Eye, EyeOff, Zap, AlertCircle, Loader2 } fr
 import { Button } from '@/components/ui/button';
 
 const PROVIDERS = [
-  { id: 'openai',    label: 'OpenAI',       placeholder: 'sk-...',      models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
-  { id: 'anthropic', label: 'Anthropic',    placeholder: 'sk-ant-...',  models: ['claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307', 'claude-3-opus-20240229'] },
-  { id: 'groq',      label: 'Groq (Grátis)',placeholder: 'gsk_...',     models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'] },
-  { id: 'google',    label: 'Google AI',    placeholder: 'AIza...',     models: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash-exp'] },
-  { id: 'mistral',   label: 'Mistral',      placeholder: '...',         models: ['mistral-large-latest', 'mistral-small-latest', 'open-mixtral-8x22b'] },
-  { id: 'together',  label: 'Together AI',  placeholder: '...',         models: ['meta-llama/Llama-3-70b-chat-hf', 'mistralai/Mixtral-8x22B-Instruct-v0.1'] },
+  { id: 'openai',     label: 'OpenAI',        placeholder: 'sk-...',       models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'], baseUrl: '' },
+  { id: 'anthropic',  label: 'Anthropic',     placeholder: 'sk-ant-...',   models: ['claude-3-5-sonnet-20241022', 'claude-3-7-sonnet-20250219', 'claude-3-haiku-20240307', 'claude-3-opus-20240229'], baseUrl: '' },
+  { id: 'groq',       label: 'Groq',          placeholder: 'gsk_...',      models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'moonshotai/kimi-k2-instruct', 'deepseek-r1-distill-llama-70b', 'gemma2-9b-it'], baseUrl: '' },
+  { id: 'google',     label: 'Google Gemini', placeholder: 'AIza...',      models: ['gemini-2.0-flash', 'gemini-2.5-pro-preview-05-06', 'gemini-1.5-pro', 'gemini-1.5-flash'], baseUrl: '' },
+  { id: 'mistral',    label: 'Mistral',       placeholder: '...',          models: ['mistral-large-latest', 'mistral-small-latest', 'codestral-latest', 'open-mixtral-8x22b'], baseUrl: '' },
+  { id: 'deepseek',   label: 'DeepSeek',      placeholder: 'sk-...',       models: ['deepseek-chat', 'deepseek-reasoner'], baseUrl: 'https://api.deepseek.com/v1/chat/completions' },
+  { id: 'xai',        label: 'xAI (Grok)',    placeholder: 'xai-...',      models: ['grok-3', 'grok-3-mini', 'grok-2-1212'], baseUrl: 'https://api.x.ai/v1/chat/completions' },
+  { id: 'cohere',     label: 'Cohere',        placeholder: '...',          models: ['command-r-plus-08-2024', 'command-r-08-2024', 'command-light'], baseUrl: '' },
+  { id: 'perplexity', label: 'Perplexity',    placeholder: 'pplx-...',     models: ['sonar-pro', 'sonar', 'sonar-reasoning-pro'], baseUrl: 'https://api.perplexity.ai/chat/completions' },
+  { id: 'together',   label: 'Together AI',   placeholder: '...',          models: ['meta-llama/Llama-3-70b-chat-hf', 'mistralai/Mixtral-8x22B-Instruct-v0.1', 'Qwen/Qwen2.5-72B-Instruct-Turbo'], baseUrl: '' },
+  { id: 'ollama',     label: 'Ollama (local)', placeholder: '(não requerida)', models: ['llama3.2', 'llama3.1', 'mistral', 'qwen2.5', 'phi4'], baseUrl: 'http://localhost:11434/v1/chat/completions' },
 ];
 
 const EMPTY_FORM = { provider: 'openai', model_id: '', model_label: '', api_key_encrypted: '', max_tokens: 2048, temperature: 0.3, base_url: '' };
@@ -73,6 +78,7 @@ export default function LLMConfigPanel() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [providerSearch, setProviderSearch] = useState('');
   const [testStatus, setTestStatus] = useState(null); // null | 'testing' | 'ok' | 'error'
   const [testMsg, setTestMsg] = useState('');
 
@@ -181,11 +187,17 @@ export default function LLMConfigPanel() {
           {/* Provider */}
           <div>
             <label className="text-xs font-semibold text-muted-foreground mb-1 block">Provedor</label>
-            <div className="flex flex-wrap gap-1.5">
-              {PROVIDERS.map(p => (
+            <input
+              value={providerSearch}
+              onChange={e => setProviderSearch(e.target.value)}
+              placeholder="Filtrar provedores..."
+              className="w-full mb-2 text-xs px-3 py-1.5 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground"
+            />
+            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+              {PROVIDERS.filter(p => p.label.toLowerCase().includes(providerSearch.toLowerCase())).map(p => (
                 <button
                   key={p.id}
-                  onClick={() => setForm(f => ({ ...f, provider: p.id, model_id: '', base_url: '' }))}
+                  onClick={() => setForm(f => ({ ...f, provider: p.id, model_id: '', base_url: p.baseUrl || '' }))}
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${form.provider === p.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
                 >
                   {p.label}
@@ -263,15 +275,25 @@ export default function LLMConfigPanel() {
             </div>
           </div>
 
-          {form.provider === 'openai' && (
+          {selectedProvider?.baseUrl !== undefined && (
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Base URL (opcional — para proxies)</label>
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">
+                Base URL {selectedProvider?.baseUrl ? '' : '(opcional — para proxies)'}
+              </label>
               <input
                 value={form.base_url}
                 onChange={e => setForm(f => ({ ...f, base_url: e.target.value }))}
-                placeholder="https://api.openai.com/v1/chat/completions"
+                placeholder={selectedProvider?.baseUrl || 'https://api.openai.com/v1/chat/completions'}
                 className="w-full text-xs px-3 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground font-mono"
               />
+              {selectedProvider?.baseUrl && !form.base_url && (
+                <button
+                  onClick={() => setForm(f => ({ ...f, base_url: selectedProvider.baseUrl }))}
+                  className="mt-1 text-[10px] text-primary hover:underline"
+                >
+                  Usar padrão: {selectedProvider.baseUrl}
+                </button>
+              )}
             </div>
           )}
 

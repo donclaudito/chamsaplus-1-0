@@ -9,12 +9,17 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // ── Provider endpoints ──────────────────────────────────────────────────────
 const PROVIDER_ENDPOINTS = {
-  openai:    'https://api.openai.com/v1/chat/completions',
-  groq:      'https://api.groq.com/openai/v1/chat/completions',
-  mistral:   'https://api.mistral.ai/v1/chat/completions',
-  together:  'https://api.together.xyz/v1/chat/completions',
-  anthropic: null,
-  google:    null,
+  openai:      'https://api.openai.com/v1/chat/completions',
+  groq:        'https://api.groq.com/openai/v1/chat/completions',
+  mistral:     'https://api.mistral.ai/v1/chat/completions',
+  together:    'https://api.together.xyz/v1/chat/completions',
+  deepseek:    'https://api.deepseek.com/v1/chat/completions',
+  xai:         'https://api.x.ai/v1/chat/completions',
+  perplexity:  'https://api.perplexity.ai/chat/completions',
+  anthropic:   null, // handled separately
+  google:      null, // handled separately
+  cohere:      null, // handled separately
+  ollama:      null, // base_url is user-defined
 };
 
 // ── LLM callers ─────────────────────────────────────────────────────────────
@@ -72,6 +77,36 @@ async function callGoogle(apiKey, messages, modelId, maxTokens, temperature) {
     content: data.candidates[0].content.parts[0].text,
     input_tokens: data.usageMetadata?.promptTokenCount || 0,
     output_tokens: data.usageMetadata?.candidatesTokenCount || 0,
+  };
+}
+
+async function callCohere(apiKey, messages, modelId, maxTokens, temperature) {
+  const systemMsg = messages.find(m => m.role === 'system');
+  const chatMsgs  = messages.filter(m => m.role !== 'system');
+  // Cohere uses a different format: preamble + chat_history + message
+  const lastMsg   = chatMsgs[chatMsgs.length - 1];
+  const history   = chatMsgs.slice(0, -1).map(m => ({
+    role: m.role === 'assistant' ? 'CHATBOT' : 'USER',
+    message: m.content,
+  }));
+  const resp = await fetch('https://api.cohere.com/v1/chat', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: modelId,
+      message: lastMsg.content,
+      chat_history: history,
+      preamble: systemMsg?.content || '',
+      max_tokens: maxTokens,
+      temperature,
+    }),
+  });
+  if (!resp.ok) throw new Error(`Cohere error (${resp.status}): ${await resp.text()}`);
+  const data = await resp.json();
+  return {
+    content: data.text,
+    input_tokens: data.meta?.tokens?.input_tokens || 0,
+    output_tokens: data.meta?.tokens?.output_tokens || 0,
   };
 }
 
@@ -141,9 +176,11 @@ Deno.serve(async (req) => {
         result = await callAnthropic(apiKey, messages, modelId, maxTokens, temperature);
       } else if (provider === 'google') {
         result = await callGoogle(apiKey, messages, modelId, maxTokens, temperature);
+      } else if (provider === 'cohere') {
+        result = await callCohere(apiKey, messages, modelId, maxTokens, temperature);
       } else {
         const endpoint = cfg.base_url || PROVIDER_ENDPOINTS[provider];
-        if (!endpoint) return Response.json({ error: `Provedor "${provider}" não suportado` }, { status: 400 });
+        if (!endpoint) return Response.json({ error: `Provedor "${provider}" não suportado. Informe a Base URL manualmente.` }, { status: 400 });
         result = await callOpenAICompatible(endpoint, apiKey, messages, modelId, maxTokens, temperature);
       }
       raw          = result.content;
