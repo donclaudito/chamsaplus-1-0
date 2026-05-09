@@ -40,10 +40,10 @@ Deno.serve(async (req) => {
       if (!a) return null;
       return {
         pmid,
-        title: a.title || 'Sem título',
-        authors: (a.authors || []).slice(0, 3).map(au => au.name).join(', '),
-        journal: a.source || '',
-        pubdate: a.pubdate || '',
+        titulo: a.title || 'Sem título',
+        autores: (a.authors || []).slice(0, 3).map(au => au.name).join(', '),
+        fecha_publicacion: a.pubdate || '',
+        fuente: a.source || '',
         url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
       };
     }).filter(Boolean);

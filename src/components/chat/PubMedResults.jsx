@@ -24,22 +24,22 @@ export default function PubMedResults({ articles, total, query }) {
           >
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-foreground leading-snug group-hover:text-blue-700 transition-colors line-clamp-2">
-                {a.title}
+                {a.titulo}
               </p>
               <div className="flex items-center gap-3 mt-1 flex-wrap">
-                {a.authors && (
+                {a.autores && (
                   <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     <Users className="w-2.5 h-2.5" />
-                    {a.authors}{a.authors.includes(',') ? ' et al.' : ''}
+                    {a.autores}{a.autores.includes(',') ? ' et al.' : ''}
                   </span>
                 )}
-                {a.journal && (
-                  <span className="text-[10px] text-blue-600 font-medium">{a.journal}</span>
+                {a.fuente && (
+                  <span className="text-[10px] text-blue-600 font-medium">{a.fuente}</span>
                 )}
-                {a.pubdate && (
+                {a.fecha_publicacion && (
                   <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     <Calendar className="w-2.5 h-2.5" />
-                    {a.pubdate}
+                    {a.fecha_publicacion}
                   </span>
                 )}
               </div>
