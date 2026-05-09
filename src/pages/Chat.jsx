@@ -137,6 +137,7 @@ export default function Chat() {
 
     const hasDataBlocks = newMessages.some(m => m.role === 'data-block');
     const chosenModel = resolveModel(text, hasDataBlocks, hasVectorContext);
+    const currentUser = await base44.auth.me().catch(() => null);
 
     try {
       let responseContent;
@@ -184,7 +185,7 @@ export default function Chat() {
         output_tokens: outputTokens,
         estimated_cost_usd: estimatedCost,
         session_id: activeChatId,
-        user_id: newMessages.find(m => m.role === 'user')?.created_by || '',
+        user_id: currentUser?.email || '',
         date_key: now.toISOString().slice(0, 10),
         month_key: now.toISOString().slice(0, 7),
       });
