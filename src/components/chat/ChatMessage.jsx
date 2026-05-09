@@ -115,7 +115,7 @@ const ChatMessage = React.memo(function ChatMessage({ message, onRetryWithoutCan
                   </div>
                 )
               }}
-            >{message.content}</ReactMarkdown>
+            >{(message.content || '').replace(/<CANVAS[^>]*>[\s\S]*?<\/CANVAS>/gi, '').replace(/<SEARCH_PROMPT>[\s\S]*?<\/SEARCH_PROMPT>/gi, '').trim()}</ReactMarkdown>
           </div>
         ) : (
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
