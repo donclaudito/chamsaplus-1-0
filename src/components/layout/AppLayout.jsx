@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Menu, UserCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -16,11 +16,10 @@ export default function AppLayout() {
     }).catch(() => {});
   }, []);
 
-  // Limpa cache ao trocar de usuário
+  // Limpa seleção ao trocar de usuário
   useEffect(() => {
     if (currentUser) {
       queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
-      initializedRef.current = false;
       setActiveChatId(null);
     }
   }, [currentUser?.email]);
@@ -35,14 +34,13 @@ export default function AppLayout() {
   });
 
   const [activeChatId, setActiveChatId] = useState(null);
-  const initializedRef = useRef(false);
 
+  // Seleciona o primeiro chat apenas quando ainda não há nenhum ativo
   useEffect(() => {
-    if (!initializedRef.current && chatSessions.length > 0) {
-      initializedRef.current = true;
+    if (!activeChatId && chatSessions.length > 0) {
       setActiveChatId(chatSessions[0].id);
     }
-  }, [chatSessions]);
+  }, [chatSessions, activeChatId]);
 
   const deleteChatMutation = useMutation({
     mutationFn: (id) => base44.entities.ChatSession.delete(id),
