@@ -10,7 +10,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 const CHUNK_SIZE = 1200;
 const CHUNK_OVERLAP = 200;
 const PAGE_SIZE = 50;
-const GROQ_EMBED_MODEL = 'nomic-embed-text-v1_5';
+const GROQ_EMBED_MODEL = 'nomic-embed-text-v1.5';
 
 function chunkText(text, size = CHUNK_SIZE, overlap = CHUNK_OVERLAP) {
   const chunks = [];
