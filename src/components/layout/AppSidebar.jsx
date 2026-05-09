@@ -184,21 +184,13 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {/* Header */}
-        <div className="p-5 border-b border-slate-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
-                <BrainCircuit className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h1 className="font-bold text-sm tracking-wide text-slate-900">CHAMSA ISA</h1>
-                <p className="text-[10px] text-slate-500 tracking-widest">v4.1 ESTRATEGISTA</p>
-              </div>
-            </div>
-            <button onClick={onClose} className="lg:hidden p-1 hover:bg-slate-200 rounded-lg">
-              <X className="w-4 h-4 text-slate-600" />
-            </button>
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+          <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
+            <BrainCircuit className="w-4 h-4 text-primary" />
           </div>
+          <button onClick={onClose} className="lg:hidden p-1 hover:bg-slate-200 rounded-lg">
+            <X className="w-4 h-4 text-slate-600" />
+          </button>
         </div>
 
         {/* Navigation */}
