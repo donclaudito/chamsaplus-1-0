@@ -11,6 +11,7 @@ import Biblioteca from '@/pages/Biblioteca';
 import Laboratorio from '@/pages/Laboratorio';
 import SharedChat from '@/pages/SharedChat';
 import Integracoes from '@/pages/Integracoes';
+import ChamsaOverview from '@/pages/ChamsaOverview';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -43,6 +44,7 @@ const AuthenticatedApp = () => {
         <Route path="/biblioteca" element={<Biblioteca />} />
         <Route path="/laboratorio" element={<Laboratorio />} />
         <Route path="/integracoes" element={<Integracoes />} />
+        <Route path="/chamsa-overview" element={<ChamsaOverview />} />
       </Route>
       <Route path="/share/:shareId" element={<SharedChat />} />
       <Route path="*" element={<PageNotFound />} />
