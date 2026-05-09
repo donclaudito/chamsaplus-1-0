@@ -11,12 +11,26 @@ export default function AppLayout() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
+    base44.auth.me().then((user) => {
+      setCurrentUser(user);
+    }).catch(() => {});
   }, []);
 
+  // Limpa cache ao trocar de usuário
+  useEffect(() => {
+    if (currentUser) {
+      queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
+      initializedRef.current = false;
+      setActiveChatId(null);
+    }
+  }, [currentUser?.email]);
+
   const { data: chatSessions = [], isLoading: chatsLoading } = useQuery({
-    queryKey: ['chatSessions'],
-    queryFn: () => base44.entities.ChatSession.list('-created_date', 50),
+    queryKey: ['chatSessions', currentUser?.email],
+    queryFn: () => currentUser
+      ? base44.entities.ChatSession.filter({ created_by: currentUser.email }, '-created_date', 50)
+      : [],
+    enabled: !!currentUser,
     initialData: [],
   });
 
