@@ -11,8 +11,11 @@ export default function IntegrationCard({ template, existingSecret, onRemove, is
   const [expanded, setExpanded] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
-  const [customBody, setCustomBody] = useState(template.exampleJson);
-  const [customUrl, setCustomUrl] = useState(template.baseUrl + template.endpoint);
+  const parsedExample = typeof template.exampleJson === 'string'
+    ? (() => { try { return JSON.parse(template.exampleJson); } catch { return { key: 'value' }; } })()
+    : (template.exampleJson || { key: 'value' });
+  const [customBody, setCustomBody] = useState(parsedExample);
+  const [customUrl, setCustomUrl] = useState((template.baseUrl || '') + (template.endpoint || ''));
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [saved, setSaved] = useState(false);

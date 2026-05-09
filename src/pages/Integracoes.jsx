@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Plug, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import IntegrationCard from '@/components/integracoes/IntegrationCard';
@@ -92,13 +93,9 @@ const BUILT_IN_PROVIDERS = [
 ];
 
 export default function Integracoes() {
-  const [customProviders, setCustomProviders] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('chamsa_custom_integrations') || '[]');
-    } catch { return []; }
-  });
   const [modalOpen, setModalOpen] = useState(false);
   const [configuredSecrets, setConfiguredSecrets] = useState([]);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     base44.functions.invoke('listSecrets', {})
@@ -111,17 +108,31 @@ export default function Integracoes() {
       .catch(() => {});
   }, []);
 
+  const { data: customProviders = [] } = useQuery({
+    queryKey: ['customIntegrations'],
+    queryFn: () => base44.entities.CustomIntegration.list('-created_date', 100),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.CustomIntegration.create(data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customIntegrations'] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.CustomIntegration.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customIntegrations'] }),
+  });
+
   const handleAddCustom = (provider) => {
-    const updated = [...customProviders, provider];
-    setCustomProviders(updated);
-    localStorage.setItem('chamsa_custom_integrations', JSON.stringify(updated));
+    const { id: _id, isCustom: _ic, ...data } = provider;
+    // Serializar exampleJson como string se for objeto
+    if (data.exampleJson && typeof data.exampleJson === 'object') {
+      data.exampleJson = JSON.stringify(data.exampleJson);
+    }
+    createMutation.mutate(data);
   };
 
-  const handleRemoveCustom = (id) => {
-    const updated = customProviders.filter(p => p.id !== id);
-    setCustomProviders(updated);
-    localStorage.setItem('chamsa_custom_integrations', JSON.stringify(updated));
-  };
+  const handleRemoveCustom = (id) => deleteMutation.mutate(id);
 
   const allProviders = [...BUILT_IN_PROVIDERS, ...customProviders];
 
@@ -189,7 +200,7 @@ export default function Integracoes() {
                 <IntegrationCard
                   key={template.id}
                   template={template}
-                  existingSecret={false}
+                  existingSecret={configuredSecrets.includes(template.secretName)}
                   onRemove={() => handleRemoveCustom(template.id)}
                   isCustom
                 />

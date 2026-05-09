@@ -1,0 +1,51 @@
+{
+  "name": "CustomIntegration",
+  "type": "object",
+  "properties": {
+    "label": {
+      "type": "string",
+      "description": "Nome do provedor"
+    },
+    "baseUrl": {
+      "type": "string",
+      "description": "URL base da API"
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "Endpoint relativo (ex: /chat/completions)"
+    },
+    "method": {
+      "type": "string",
+      "default": "POST",
+      "description": "M\u00e9todo HTTP"
+    },
+    "authHeader": {
+      "type": "string",
+      "description": "Header de autentica\u00e7\u00e3o (ex: Bearer {API_KEY})"
+    },
+    "secretName": {
+      "type": "string",
+      "description": "Nome do secret no ambiente (ex: MINHA_API_KEY)"
+    },
+    "exampleJson": {
+      "type": "string",
+      "description": "JSON de exemplo serializado como string"
+    },
+    "color": {
+      "type": "string",
+      "description": "Cor Tailwind para estiliza\u00e7\u00e3o (ex: text-violet-600)"
+    },
+    "bg": {
+      "type": "string",
+      "description": "Background Tailwind (ex: bg-violet-50)"
+    },
+    "border": {
+      "type": "string",
+      "description": "Border Tailwind (ex: border-violet-200)"
+    }
+  },
+  "required": [
+    "label",
+    "baseUrl"
+  ]
+}
