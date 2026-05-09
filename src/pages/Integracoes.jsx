@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
 import { Plus, Plug, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import IntegrationCard from '@/components/integracoes/IntegrationCard';
@@ -90,8 +91,6 @@ const BUILT_IN_PROVIDERS = [
   },
 ];
 
-const KNOWN_CONFIGURED = ['groq']; // Secrets já definidos no backend
-
 export default function Integracoes() {
   const [customProviders, setCustomProviders] = useState(() => {
     try {
@@ -99,6 +98,18 @@ export default function Integracoes() {
     } catch { return []; }
   });
   const [modalOpen, setModalOpen] = useState(false);
+  const [configuredSecrets, setConfiguredSecrets] = useState([]);
+
+  useEffect(() => {
+    base44.functions.invoke('listSecrets', {})
+      .then(res => {
+        const configured = (res.data.secrets || [])
+          .filter(s => s.configured)
+          .map(s => s.name);
+        setConfiguredSecrets(configured);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleAddCustom = (provider) => {
     const updated = [...customProviders, provider];
@@ -139,17 +150,14 @@ export default function Integracoes() {
         {/* Status bar */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Status:</span>
-          {KNOWN_CONFIGURED.map(id => {
-            const p = BUILT_IN_PROVIDERS.find(b => b.id === id);
-            return p ? (
-              <span key={id} className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                {p.label}
-              </span>
-            ) : null;
-          })}
+          {BUILT_IN_PROVIDERS.filter(p => configuredSecrets.includes(p.secretName)).map(p => (
+            <span key={p.id} className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+              {p.label}
+            </span>
+          ))}
           <span className="text-[10px] text-muted-foreground">
-            {allProviders.length - KNOWN_CONFIGURED.length} sem configuração
+            {allProviders.length - configuredSecrets.length} sem configuração
           </span>
         </div>
 
@@ -166,7 +174,7 @@ export default function Integracoes() {
               <IntegrationCard
                 key={template.id}
                 template={template}
-                existingSecret={KNOWN_CONFIGURED.includes(template.id)}
+                existingSecret={configuredSecrets.includes(template.secretName)}
               />
             ))}
           </div>
