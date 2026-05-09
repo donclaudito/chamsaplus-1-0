@@ -211,8 +211,20 @@ Deno.serve(async (req) => {
 
     const parsed = parseResponse(raw);
 
+    // Se o LLM gerou um SEARCH_PROMPT, executar busca no PubMed automaticamente
+    let pubmedResults = null;
+    if (parsed.searchPrompt) {
+      try {
+        const pubmedRes = await base44.functions.invoke('searchPubMed', { query: parsed.searchPrompt });
+        if (pubmedRes?.articles?.length > 0) {
+          pubmedResults = { articles: pubmedRes.articles, total: pubmedRes.total, query: parsed.searchPrompt };
+        }
+      } catch (_) {}
+    }
+
     return Response.json({
       ...parsed,
+      pubmedResults,
       usage: { prompt_tokens: inputTokens, completion_tokens: outputTokens },
       provider,
       model: modelId,

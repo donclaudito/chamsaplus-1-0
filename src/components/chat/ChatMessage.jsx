@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import SearchSuggestion from './SearchSuggestion';
+import PubMedResults from './PubMedResults';
 
 const ChatMessage = React.memo(function ChatMessage({ message, onRetryWithoutCanvas }) {
   const [copied, setCopied] = useState(false);
@@ -120,7 +121,15 @@ const ChatMessage = React.memo(function ChatMessage({ message, onRetryWithoutCan
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
         )}
 
-        {isAssistant && message.searchPrompt && (
+        {isAssistant && message.pubmedResults && (
+          <PubMedResults
+            articles={message.pubmedResults.articles}
+            total={message.pubmedResults.total}
+            query={message.pubmedResults.query}
+          />
+        )}
+
+        {isAssistant && message.searchPrompt && !message.pubmedResults && (
           <SearchSuggestion query={message.searchPrompt} />
         )}
 

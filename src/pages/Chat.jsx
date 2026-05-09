@@ -148,7 +148,7 @@ export default function Chat() {
         messages: llmMessages,
         model: chosenModel,
       });
-      const { content: llmContent, canvas: parsedCanvas, searchPrompt: extractedSearchPrompt, usage } = res.data;
+      const { content: llmContent, canvas: parsedCanvas, searchPrompt: extractedSearchPrompt, pubmedResults, usage } = res.data;
       responseContent = llmContent;
       inputTokens  = usage?.prompt_tokens     || Math.round(promptText.length / 4);
       outputTokens = usage?.completion_tokens || Math.round(responseContent.length / 4);
@@ -189,6 +189,7 @@ export default function Chat() {
         content: responseContent,
         timestamp: new Date().toISOString(),
         searchPrompt: extractedSearchPrompt,
+        pubmedResults: pubmedResults || null,
       };
       const updatedMessages = [...newMessages, assistantMsg];
       setMessagesAndPersist(updatedMessages);
