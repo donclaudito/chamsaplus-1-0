@@ -3,6 +3,7 @@ import { Plus, Plug, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import IntegrationCard from '@/components/integracoes/IntegrationCard';
 import AddIntegrationModal from '@/components/integracoes/AddIntegrationModal';
+import SecretsStatusPanel from '@/components/integracoes/SecretsStatusPanel';
 
 const BUILT_IN_PROVIDERS = [
   {
@@ -150,6 +151,11 @@ export default function Integracoes() {
           <span className="text-[10px] text-muted-foreground">
             {allProviders.length - KNOWN_CONFIGURED.length} sem configuração
           </span>
+        </div>
+
+        {/* Secrets Status */}
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <SecretsStatusPanel />
         </div>
 
         {/* Built-in integrations */}
