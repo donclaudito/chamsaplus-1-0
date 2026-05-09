@@ -114,7 +114,8 @@ export default function Integracoes() {
   const allProviders = [...BUILT_IN_PROVIDERS, ...customProviders];
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="relative h-full">
+    <div className="absolute inset-0 overflow-y-auto">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-5">
 
         {/* Header */}
@@ -201,6 +202,7 @@ export default function Integracoes() {
         onClose={() => setModalOpen(false)}
         onAdd={handleAddCustom}
       />
+    </div>
     </div>
   );
 }
