@@ -69,7 +69,7 @@ export default function AppLayout() {
       messages: [{ role: 'assistant', content: 'Sessão iniciada, Doutor. Pronto para análise estratégica.', timestamp: new Date().toISOString() }]
     }),
     onSuccess: (newChat) => {
-      queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
+      queryClient.setQueryData(['chatSessions', currentUser?.email], (old = []) => [newChat, ...old]);
       setActiveChatId(newChat.id);
     },
   });
