@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Menu, Settings } from 'lucide-react';
+import { Menu, UserCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AppSidebar from './AppSidebar';
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
 
   const { data: chatSessions = [], isLoading: chatsLoading } = useQuery({
     queryKey: ['chatSessions'],
@@ -103,6 +108,14 @@ export default function AppLayout() {
             <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-1 rounded-md hidden sm:block">
               Deep Reasoning ON
             </span>
+            {currentUser && (
+              <div className="flex items-center gap-1.5 bg-muted/60 border border-border px-2.5 py-1 rounded-full">
+                <UserCircle className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="text-[11px] font-medium text-foreground truncate max-w-[160px]">
+                  {currentUser.email}
+                </span>
+              </div>
+            )}
           </div>
         </header>
 
