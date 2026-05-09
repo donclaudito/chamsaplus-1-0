@@ -103,7 +103,7 @@ export default function ChamsaOverview() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-y-auto h-screen">
       {/* Hero */}
       <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 text-white px-6 py-16 text-center">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
