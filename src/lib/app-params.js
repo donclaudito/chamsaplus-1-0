@@ -39,6 +39,17 @@ const getAppParams = () => {
 		storage.removeItem('base44_access_token');
 		storage.removeItem('token');
 	}
+
+	// If there's a fresh access_token in the URL (e.g. from an invite link),
+	// clear any existing session first so the new token takes effect cleanly.
+	const urlParams = new URLSearchParams(window.location.search);
+	const incomingToken = urlParams.get("access_token");
+	if (incomingToken) {
+		storage.removeItem('base44_access_token');
+		storage.removeItem('base44_token');
+		storage.removeItem('token');
+	}
+
 	return {
 		appId: getAppParamValue("app_id", { defaultValue: import.meta.env.VITE_BASE44_APP_ID }),
 		token: getAppParamValue("access_token", { removeFromUrl: true }),
