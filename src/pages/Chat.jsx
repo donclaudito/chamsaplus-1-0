@@ -6,7 +6,7 @@ import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
 import ThinkingIndicator from '@/components/chat/ThinkingIndicator';
 import PasteDataModal from '@/components/chat/PasteDataModal';
-import ModelSelector from '@/components/chat/ModelSelector';
+import ModelSelector from '@/components/chat/ModelSelector.jsx';
 import LLMUsageBar from '@/components/chat/LLMUsageBar.jsx';
 import DriveSourceConfig from '@/components/chat/DriveSourceConfig';
 import CanvasPanel from '@/components/chat/CanvasPanel';
