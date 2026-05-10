@@ -98,7 +98,7 @@ function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose
       ) : (
         <button
           onClick={() => { onSelect(chat.id); closeSidebar(); }}
-          className={`flex-1 text-left px-3 py-2.5 text-xs font-medium truncate ${isActive ? 'text-primary' : 'text-slate-700'}`}
+          className={`flex-1 text-left px-3 py-3 sm:py-2.5 text-xs font-medium truncate touch-manipulation ${isActive ? 'text-primary' : 'text-slate-700'}`}
         >
           {chat.title}
         </button>
@@ -108,7 +108,7 @@ function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose
         <div className="relative shrink-0">
           <button
             onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
-            className="opacity-0 group-hover:opacity-100 p-1 mr-1 hover:bg-slate-300 rounded-md transition-all"
+            className="opacity-0 group-hover:opacity-100 touch:opacity-100 p-2 mr-1 hover:bg-slate-300 rounded-md transition-all active:bg-slate-300"
             title="Opções"
           >
             <MoreVertical className="w-3.5 h-3.5 text-slate-500" />
@@ -176,11 +176,11 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
       </AnimatePresence>
 
       <aside className={`
-        fixed top-0 left-0 h-full z-50 w-72
+        fixed top-0 left-0 h-full z-50 w-[80vw] max-w-[288px]
         bg-slate-100 text-slate-800
         flex flex-col
         transition-transform duration-300 ease-out
-        lg:translate-x-0 lg:static lg:z-auto border-r border-slate-200
+        lg:translate-x-0 lg:static lg:z-auto lg:w-72 border-r border-slate-200
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {/* Header */}

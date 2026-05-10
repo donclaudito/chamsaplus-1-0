@@ -31,7 +31,7 @@ export default function ChatInput({ onSend, onPaste, onTool, isLoading, canvasMo
   };
 
   return (
-    <div className="border-t border-border bg-card/80 backdrop-blur-sm p-3 sm:p-4 shrink-0">
+    <div className="border-t border-border bg-card/80 backdrop-blur-sm p-3 sm:p-4 shrink-0 pb-[env(safe-area-inset-bottom,12px)]">
       <div className="max-w-2xl mx-auto">
 
         {/* Canvas mode indicator */}
@@ -65,7 +65,7 @@ export default function ChatInput({ onSend, onPaste, onTool, isLoading, canvasMo
           {/* Paste clinical data */}
           <button
             onClick={onPaste}
-            className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all shrink-0"
+            className="p-2.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all shrink-0 touch-manipulation active:bg-primary/10"
             title="Injetar dados clínicos"
           >
             <ClipboardPaste className="w-4 h-4" />
@@ -74,10 +74,10 @@ export default function ChatInput({ onSend, onPaste, onTool, isLoading, canvasMo
           {/* Canvas toggle button */}
           <button
             onClick={() => onTool && onTool('canvas')}
-            className={`p-2 rounded-xl transition-all shrink-0 ${
+            className={`p-2.5 rounded-xl transition-all shrink-0 touch-manipulation ${
               canvasMode
                 ? 'text-primary bg-primary/15 border border-primary/30'
-                : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
+                : 'text-muted-foreground hover:text-primary hover:bg-primary/10 active:bg-primary/10'
             }`}
             title={canvasMode ? 'Desativar Canvas' : 'Ativar Canvas — painel lateral para documentos longos'}
           >
@@ -104,7 +104,7 @@ export default function ChatInput({ onSend, onPaste, onTool, isLoading, canvasMo
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
             size="icon"
-            className="rounded-xl h-10 w-10 shrink-0"
+            className="rounded-xl h-10 w-10 shrink-0 touch-manipulation"
           >
             {isLoading
               ? <Loader2 className="w-4 h-4 animate-spin" />

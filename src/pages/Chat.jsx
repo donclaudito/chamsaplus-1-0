@@ -235,9 +235,9 @@ export default function Chat() {
   const modelForDisplay = manualModel || activeModel;
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* Chat Column */}
-      <div className={`flex flex-col min-w-0 transition-all duration-300 ${canvasContent ? 'w-[400px] shrink-0 border-r border-border' : 'flex-1'}`}>
+    <div className="flex h-full overflow-hidden min-h-0">
+      {/* Chat Column — oculta em mobile quando canvas está aberto */}
+      <div className={`flex flex-col min-w-0 transition-all duration-300 ${canvasContent ? 'hidden sm:flex sm:w-[400px] sm:shrink-0 sm:border-r sm:border-border' : 'flex-1'}`}>
         <LLMUsageBar usageLog={usageLog} />
 
         {/* Model routing bar */}
@@ -311,9 +311,12 @@ export default function Chat() {
         />
       </div>
 
-      {/* Canvas Panel */}
+      {/* Canvas Panel — full screen overlay em mobile, coluna lateral em desktop */}
       {canvasContent && (
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div className="
+          absolute inset-0 z-30 flex flex-col overflow-hidden
+          sm:relative sm:inset-auto sm:z-auto sm:flex-1 sm:min-w-0
+        ">
           <CanvasPanel
             content={canvasContent}
             title={canvasTitle}

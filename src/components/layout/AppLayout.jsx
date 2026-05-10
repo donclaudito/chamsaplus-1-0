@@ -88,13 +88,13 @@ export default function AppLayout() {
   const activeChat = chatSessions.find(c => c.id === activeChatId) || chatSessions[0];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-[100dvh] overflow-hidden bg-background">
       <AppSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         chats={chatSessions}
         activeChatId={activeChatId}
-        onSelectChat={setActiveChatId}
+        onSelectChat={(id) => { setActiveChatId(id); setSidebarOpen(false); }}
         onNewChat={() => createChatMutation.mutate()}
         isCreating={createChatMutation.isPending}
         onDeleteChat={(id) => deleteChatMutation.mutate(id)}
@@ -105,10 +105,11 @@ export default function AppLayout() {
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar */}
-        <header className="h-14 border-b border-border flex items-center px-3 sm:px-4 gap-2 sm:gap-3 shrink-0 bg-card/80 backdrop-blur-sm">
+        <header className="h-14 border-b border-border flex items-center px-3 sm:px-4 gap-2 sm:gap-3 shrink-0 bg-card/80 backdrop-blur-sm safe-area-inset-top">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
+            className="p-2 hover:bg-muted rounded-lg transition-colors lg:hidden touch-manipulation"
+            aria-label="Abrir menu"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -117,13 +118,13 @@ export default function AppLayout() {
             <span className="text-xs font-semibold text-muted-foreground tracking-wide hidden sm:block">STRATEGIST</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-1 rounded-md hidden sm:block">
+            <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-1 rounded-md hidden md:block">
               Deep Reasoning ON
             </span>
             {currentUser && (
               <div className="flex items-center gap-1.5 bg-muted/60 border border-border px-2.5 py-1 rounded-full">
                 <UserCircle className="w-3.5 h-3.5 text-primary shrink-0" />
-                <span className="text-[11px] font-medium text-foreground truncate max-w-[160px]">
+                <span className="text-[11px] font-medium text-foreground truncate max-w-[120px] sm:max-w-[200px]">
                   {currentUser.email}
                 </span>
               </div>
