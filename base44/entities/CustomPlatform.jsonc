@@ -1,0 +1,51 @@
+{
+  "name": "CustomPlatform",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do provedor (ex: Mistral, Together AI)"
+    },
+    "plans": {
+      "type": "array",
+      "description": "Lista de planos/modelos dispon\u00edveis nesta plataforma",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "model_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "credits": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "color": {
+      "type": "string",
+      "description": "Cor Tailwind do texto (ex: text-pink-400)"
+    },
+    "bg": {
+      "type": "string",
+      "description": "Background Tailwind (ex: bg-pink-500/10)"
+    },
+    "border": {
+      "type": "string",
+      "description": "Border Tailwind (ex: border-pink-500/30)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se a plataforma est\u00e1 habilitada no seletor"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}
