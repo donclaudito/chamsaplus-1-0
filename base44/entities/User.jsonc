@@ -1,0 +1,24 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user",
+      "description": "Papel do usu\u00e1rio no sistema"
+    },
+    "is_approved": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o usu\u00e1rio foi aprovado manualmente pelo admin"
+    },
+    "auth_provider": {
+      "type": "string",
+      "description": "Provedor de autentica\u00e7\u00e3o: google ou password"
+    }
+  }
+}

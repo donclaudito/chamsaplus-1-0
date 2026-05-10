@@ -12,9 +12,11 @@ import Laboratorio from '@/pages/Laboratorio';
 import SharedChat from '@/pages/SharedChat';
 import Integracoes from '@/pages/Integracoes';
 import ChamsaOverview from '@/pages/ChamsaOverview';
+import PendingApproval from '@/pages/PendingApproval';
+import AdminUsers from '@/pages/AdminUsers';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user, isAuthenticated } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -30,10 +32,21 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
       navigateToLogin();
       return null;
     }
+  }
+
+  // Block unapproved users — only block if explicitly set to false (not null/undefined)
+  // Admins are never blocked
+  const isBlocked = isAuthenticated && user && user.is_approved === false && user.role !== 'admin';
+  if (isBlocked) {
+    return (
+      <Routes>
+        <Route path="/share/:shareId" element={<SharedChat />} />
+        <Route path="*" element={<PendingApproval />} />
+      </Routes>
+    );
   }
 
   // Render the main app
@@ -45,6 +58,9 @@ const AuthenticatedApp = () => {
         <Route path="/laboratorio" element={<Laboratorio />} />
         <Route path="/integracoes" element={<Integracoes />} />
         <Route path="/chamsa-overview" element={<ChamsaOverview />} />
+        {user?.role === 'admin' && (
+          <Route path="/admin/usuarios" element={<AdminUsers />} />
+        )}
       </Route>
       <Route path="/share/:shareId" element={<SharedChat />} />
       <Route path="*" element={<PageNotFound />} />

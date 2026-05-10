@@ -4,8 +4,9 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   MessageSquare, FolderSearch, Beaker, Plus, X, BrainCircuit,
   MoreVertical, Share2, Pin, PinOff, Pencil, Trash2, Check,
-  CheckSquare, Square, Plug
+  CheckSquare, Square, Plug, Users
 } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const navItems = [
@@ -136,6 +137,7 @@ function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose
 
 export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSelectChat, onNewChat, isCreating, onDeleteChat, onBulkDelete, onRenameChat, onPinChat }) {
   const location = useLocation();
+  const { user } = useAuth();
   const [selected, setSelected] = useState(new Set());
   const [selectMode, setSelectMode] = useState(false);
 
@@ -287,6 +289,24 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
             ))}
           </div>
         </div>
+
+        {/* Admin link */}
+        {user?.role === 'admin' && (
+          <div className="px-3 pb-1">
+            <Link
+              to="/admin/usuarios"
+              onClick={onClose}
+              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all
+                ${location.pathname === '/admin/usuarios'
+                  ? 'bg-amber-500/10 text-amber-600'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'}
+              `}
+            >
+              <Users className="w-4 h-4" />
+              Gerenciar Usuários
+            </Link>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="p-4 border-t border-slate-200">
