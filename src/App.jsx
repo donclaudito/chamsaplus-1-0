@@ -13,6 +13,7 @@ import SharedChat from '@/pages/SharedChat';
 import Integracoes from '@/pages/Integracoes';
 import ChamsaOverview from '@/pages/ChamsaOverview';
 import PendingApproval from '@/pages/PendingApproval';
+import PendingEmailVerification from '@/pages/PendingEmailVerification';
 import AdminUsers from '@/pages/AdminUsers';
 
 const AuthenticatedApp = () => {
@@ -35,6 +36,17 @@ const AuthenticatedApp = () => {
       navigateToLogin();
       return null;
     }
+  }
+
+  // Block users with unverified email (email/password signups) — admins are never blocked
+  const isEmailUnverified = isAuthenticated && user && user.is_verified === false && user.role !== 'admin';
+  if (isEmailUnverified) {
+    return (
+      <Routes>
+        <Route path="/share/:shareId" element={<SharedChat />} />
+        <Route path="*" element={<PendingEmailVerification />} />
+      </Routes>
+    );
   }
 
   // Block unapproved users — only block if explicitly set to false (not null/undefined)
