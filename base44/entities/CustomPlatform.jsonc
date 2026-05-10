@@ -43,6 +43,10 @@
       "type": "boolean",
       "default": true,
       "description": "Se a plataforma est\u00e1 habilitada no seletor"
+    },
+    "_user_llm_config_id": {
+      "type": "string",
+      "description": "ID do UserLLMConfig vinculado (para sincroniza\u00e7\u00e3o autom\u00e1tica)"
     }
   },
   "required": [

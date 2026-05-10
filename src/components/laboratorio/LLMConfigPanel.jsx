@@ -88,8 +88,22 @@ export default function LLMConfigPanel() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.UserLLMConfig.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['userLLMConfigs'] }); setShowForm(false); setForm(EMPTY_FORM); },
+    mutationFn: async (data) => {
+      const cfg = await base44.entities.UserLLMConfig.create(data);
+      // Sync to CustomPlatform so it shows up in ModelSelector
+      const providerLabel = PROVIDERS.find(p => p.id === data.provider)?.label || data.provider;
+      await base44.entities.CustomPlatform.create({
+        name: providerLabel,
+        plans: [{ label: data.model_label || data.model_id, model_id: data.model_id, description: `via ${providerLabel}`, credits: '' }],
+        color: 'text-indigo-400',
+        bg: 'bg-indigo-500/10',
+        border: 'border-indigo-500/30',
+        is_active: true,
+        _user_llm_config_id: cfg.id,
+      });
+      return cfg;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['userLLMConfigs'] }); qc.invalidateQueries({ queryKey: ['customPlatforms'] }); setShowForm(false); setForm(EMPTY_FORM); },
   });
 
   const updateMutation = useMutation({
@@ -98,8 +112,13 @@ export default function LLMConfigPanel() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.UserLLMConfig.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['userLLMConfigs'] }),
+    mutationFn: async (id) => {
+      // Remove linked CustomPlatform too
+      const platforms = await base44.entities.CustomPlatform.filter({ _user_llm_config_id: id });
+      await Promise.all(platforms.map(p => base44.entities.CustomPlatform.delete(p.id)));
+      return base44.entities.UserLLMConfig.delete(id);
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['userLLMConfigs'] }); qc.invalidateQueries({ queryKey: ['customPlatforms'] }); },
   });
 
   const handleToggle = async (cfg) => {
