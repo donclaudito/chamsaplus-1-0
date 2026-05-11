@@ -22,12 +22,22 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPaste, setShowPaste] = useState(false);
   const [usageLog, setUsageLog] = useState([]);
-  const [driveFolderId, setDriveFolderId] = useState(
-    () => localStorage.getItem('chamsa_drive_folder') || DEFAULT_DRIVE_FOLDER_ID
-  );
+  const [driveFolderId, setDriveFolderId] = useState(DEFAULT_DRIVE_FOLDER_ID);
 
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
+
+  const currentUser = useRef(null);
+
+  // Load drive folder per user
+  useEffect(() => {
+    base44.auth.me().then(u => {
+      currentUser.current = u;
+      const key = `chamsa_drive_folder_${u?.email || 'default'}`;
+      const saved = localStorage.getItem(key);
+      setDriveFolderId(saved || DEFAULT_DRIVE_FOLDER_ID);
+    }).catch(() => {});
+  }, []);
 
   const { messages, setMessages, setMessagesAndPersist, resetMessages } = useChatMessages(activeChatId);
   const {
@@ -57,7 +67,8 @@ export default function Chat() {
 
   const handleSaveDriveFolder = useCallback((id) => {
     setDriveFolderId(id);
-    localStorage.setItem('chamsa_drive_folder', id);
+    const email = currentUser.current?.email || 'default';
+    localStorage.setItem(`chamsa_drive_folder_${email}`, id);
   }, []);
 
   const sendMessage = useCallback(async (text) => {
@@ -137,7 +148,7 @@ export default function Chat() {
 
     const hasDataBlocks = newMessages.some(m => m.role === 'data-block');
     const chosenModel = resolveModel(text, hasDataBlocks, hasVectorContext);
-    const currentUser = await base44.auth.me().catch(() => null);
+    const authUser = currentUser.current || await base44.auth.me().catch(() => null);
 
     try {
       let responseContent;
@@ -185,7 +196,7 @@ export default function Chat() {
         output_tokens: outputTokens,
         estimated_cost_usd: estimatedCost,
         session_id: activeChatId,
-        user_id: currentUser?.email || '',
+        user_id: authUser?.email || '',
         date_key: now.toISOString().slice(0, 10),
         month_key: now.toISOString().slice(0, 7),
       });
