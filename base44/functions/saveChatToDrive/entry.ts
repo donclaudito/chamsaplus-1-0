@@ -85,7 +85,22 @@ Deno.serve(async (req) => {
         return Response.json({ error: `Drive POST failed: ${err}` }, { status: 500 });
       }
       const data = await res.json();
-      return Response.json({ driveFileId: data.id });
+      fileId = data.id;
+
+      // Set "anyone with link" as reader so the end user can access the file
+      await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}/permissions`,
+        {
+          method: 'POST',
+          headers: {
+            ...authHeader,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ type: 'anyone', role: 'reader' }),
+        }
+      );
+
+      return Response.json({ driveFileId: fileId });
     }
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
