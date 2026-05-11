@@ -36,9 +36,7 @@
   ],
   "rls": {
     "create": {
-      "user_condition": {
-        "isAuthenticated": true
-      }
+      "created_by": "{{user.email}}"
     },
     "read": {
       "$or": [
