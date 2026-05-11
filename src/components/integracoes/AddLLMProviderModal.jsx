@@ -65,12 +65,12 @@ export default function AddLLMProviderModal({ open, onClose }) {
         max_tokens: Number(data.max_tokens),
       });
 
-      await base44.entities.CustomIntegration.create({
+      await base44.functions.invoke('saveCustomIntegration', {
         label: data.label,
         baseUrl: data.baseUrl,
         endpoint: data.endpoint,
         method: 'POST',
-        secretName: data.apiKey ? `LLM_KEY_${data.label.toUpperCase().replace(/[^A-Z0-9]/g, '_')}` : '',
+        secretName: data.apiKey ? secretName : '',
         authHeader: 'Bearer {API_KEY}',
         exampleJson,
         color: data.color,

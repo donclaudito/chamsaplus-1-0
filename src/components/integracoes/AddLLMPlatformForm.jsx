@@ -43,8 +43,8 @@ export default function AddLLMPlatformForm({ open, onClose }) {
         max_tokens: Number(data.max_tokens),
       });
 
-      // Criar integração customizada
-      await base44.entities.CustomIntegration.create({
+      // Criar integração customizada via backend (service role)
+      await base44.functions.invoke('saveCustomIntegration', {
         label: data.label,
         baseUrl: data.baseUrl,
         endpoint: data.endpoint,

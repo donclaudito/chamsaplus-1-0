@@ -39,7 +39,7 @@ export default function AddLLMPlatformModal({ open, onClose }) {
         max_tokens: Number(data.max_tokens),
       });
 
-      await base44.entities.CustomIntegration.create({
+      await base44.functions.invoke('saveCustomIntegration', {
         label: data.label,
         baseUrl: '',
         endpoint: data.endpoint,
