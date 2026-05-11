@@ -45,11 +45,6 @@
     "output_tokens"
   ],
   "rls": {
-    "create": {
-      "user_condition": {
-        "isAuthenticated": true
-      }
-    },
     "read": {
       "$or": [
         {

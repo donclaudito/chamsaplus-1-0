@@ -1,42 +1,28 @@
 {
-  "name": "Knowledge",
+  "name": "KnowledgeFolder",
   "type": "object",
   "properties": {
-    "title": {
+    "name": {
       "type": "string",
-      "description": "Nome do documento ou protocolo"
+      "description": "Nome da pasta"
     },
-    "content": {
+    "color": {
       "type": "string",
-      "description": "Conte\u00fado textual do documento"
+      "description": "Cor identificadora da pasta (ex: emerald, blue, purple)",
+      "default": "blue"
     },
-    "category": {
+    "icon": {
       "type": "string",
-      "enum": [
-        "protocolo",
-        "laudo",
-        "pesquisa",
-        "notebook",
-        "outro"
-      ],
-      "default": "outro",
-      "description": "Categoria do documento"
+      "description": "Emoji ou \u00edcone da pasta",
+      "default": "\ud83d\udcc1"
     },
-    "folder_id": {
+    "description": {
       "type": "string",
-      "description": "ID da pasta de organiza\u00e7\u00e3o"
-    },
-    "file_url": {
-      "type": "string",
-      "description": "URL do arquivo enviado"
-    },
-    "file_type": {
-      "type": "string",
-      "description": "Tipo do arquivo (pdf, md, txt, etc)"
+      "description": "Descri\u00e7\u00e3o opcional da pasta"
     }
   },
   "required": [
-    "title"
+    "name"
   ],
   "rls": {
     "create": {
