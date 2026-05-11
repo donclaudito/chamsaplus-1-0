@@ -46,15 +46,12 @@
   ],
   "rls": {
     "create": {
-      "data.user_id": "{{user.email}}",
-      "user_condition": {
-        "isAuthenticated": true
-      }
+      "created_by": "{{user.email}}"
     },
     "read": {
       "$or": [
         {
-          "data.user_id": "{{user.email}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
@@ -63,15 +60,7 @@
         }
       ]
     },
-    "update": {
-      "user_condition": {
-        "role": "admin"
-      }
-    },
-    "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
-    }
+    "update": null,
+    "delete": null
   }
 }
