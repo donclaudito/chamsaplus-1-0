@@ -35,26 +35,36 @@
     "title"
   ],
   "rls": {
-    "read": {
-      "record_condition": {
-        "field": "created_by",
-        "operator": "equals",
-        "value_from_user": "email"
+    "create": {
+      "created_by": "{{user.email}}",
+      "user_condition": {
+        "isAuthenticated": true
       }
     },
+    "read": null,
     "update": {
-      "record_condition": {
-        "field": "created_by",
-        "operator": "equals",
-        "value_from_user": "email"
-      }
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     },
     "delete": {
-      "record_condition": {
-        "field": "created_by",
-        "operator": "equals",
-        "value_from_user": "email"
-      }
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     }
   }
 }
