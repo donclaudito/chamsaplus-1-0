@@ -16,11 +16,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Campo "label" é obrigatório.' }, { status: 400 });
     }
 
+    const VALID_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+    const resolvedMethod = (method || 'POST').toUpperCase();
+    if (!VALID_METHODS.includes(resolvedMethod)) {
+      return Response.json({ error: `Método HTTP inválido: "${method}". Permitidos: ${VALID_METHODS.join(', ')}` }, { status: 400 });
+    }
+
+    if (baseUrl && !/^https?:\/\/.+/.test(baseUrl)) {
+      return Response.json({ error: 'baseUrl deve ser uma URL válida começando com http:// ou https://' }, { status: 400 });
+    }
+
     const record = await base44.asServiceRole.entities.CustomIntegration.create({
       label,
       baseUrl: baseUrl || '',
       endpoint: endpoint || '/chat/completions',
-      method: method || 'POST',
+      method: resolvedMethod,
       secretName: secretName || '',
       authHeader: authHeader || 'Bearer {API_KEY}',
       exampleJson: exampleJson || '',

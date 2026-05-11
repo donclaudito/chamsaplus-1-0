@@ -83,23 +83,31 @@ Deno.serve(async (req) => {
     for (const file of files) {
       let content = '';
 
-      if (file.mimeType === 'application/vnd.google-apps.document') {
-        const res = await fetch(
-          `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain`,
-          { headers: driveHeaders }
-        );
-        content = await res.text();
-      } else if (['text/plain', 'text/markdown', 'text/csv'].includes(file.mimeType)) {
-        const res = await fetch(
-          `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
-          { headers: driveHeaders }
-        );
-        content = await res.text();
-      } else {
+      try {
+        if (file.mimeType === 'application/vnd.google-apps.document') {
+          const res = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain`,
+            { headers: driveHeaders }
+          );
+          if (!res.ok) { console.warn(`[vectorize] Falha ao exportar "${file.name}": ${res.status}`); continue; }
+          content = await res.text();
+        } else if (['text/plain', 'text/markdown', 'text/csv'].includes(file.mimeType)) {
+          const res = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+            { headers: driveHeaders }
+          );
+          if (!res.ok) { console.warn(`[vectorize] Falha ao baixar "${file.name}": ${res.status}`); continue; }
+          content = await res.text();
+        } else {
+          continue;
+        }
+      } catch (fileErr) {
+        console.warn(`[vectorize] Erro ao processar arquivo "${file.name}": ${fileErr.message}`);
         continue;
       }
 
       if (!content.trim()) continue;
+      console.info(`[vectorize] Processando "${file.name}" (${content.length} chars)`);
 
       const chunks = chunkText(content);
       totalChunks += chunks.length;

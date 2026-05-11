@@ -14,6 +14,9 @@ Deno.serve(async (req) => {
     const { url, method = 'POST', body, secret_name, auth_header } = await req.json();
 
     if (!url) return Response.json({ error: 'url is required' }, { status: 400 });
+    if (!/^https?:\/\/.+/.test(url)) {
+      return Response.json({ error: 'url deve começar com http:// ou https://' }, { status: 400 });
+    }
 
     // Resolve a API Key pelo nome do secret
     let apiKey = '';
@@ -34,11 +37,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
     const response = await fetch(url, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
-    });
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timer));
 
     const responseText = await response.text();
     let responseData;

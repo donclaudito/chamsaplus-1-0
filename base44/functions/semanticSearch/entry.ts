@@ -24,20 +24,27 @@ function cosineSimilarity(a, b) {
 }
 
 async function getQueryEmbedding(text, groqKey) {
+  let lastError = null;
   for (const model of GROQ_EMBED_MODELS) {
-    const resp = await fetch('https://api.groq.com/openai/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${groqKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ model, input: [text] }),
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      return { embedding: data.data[0].embedding, model };
+    try {
+      const resp = await fetch('https://api.groq.com/openai/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${groqKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ model, input: [text] }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        return { embedding: data.data[0].embedding, model };
+      }
+      lastError = `Model ${model} failed with status ${resp.status}`;
+    } catch (err) {
+      lastError = err.message;
     }
   }
+  console.warn(`[semanticSearch] Embedding indisponível: ${lastError}`);
   return null;
 }
 

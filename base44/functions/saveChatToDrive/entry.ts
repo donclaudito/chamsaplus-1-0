@@ -80,11 +80,16 @@ Deno.serve(async (req) => {
 
       if (!res.ok) {
         const err = await res.text();
-        // If the file was deleted externally, reset and recreate on next call
         if (res.status === 404) {
           return Response.json({ driveFileId: null, error: 'File not found on Drive, will recreate on next save' }, { status: 200 });
         }
-        return Response.json({ error: `Drive PATCH failed: ${err}` }, { status: 500 });
+        if (res.status === 403) {
+          return Response.json({ error: 'Sem permissão para atualizar o arquivo no Drive. Verifique as permissões.' }, { status: 403 });
+        }
+        if (res.status === 507 || (err && err.includes('storageQuotaExceeded'))) {
+          return Response.json({ error: 'Cota de armazenamento do Google Drive esgotada.' }, { status: 507 });
+        }
+        return Response.json({ error: `Drive PATCH failed (${res.status}): ${err}` }, { status: 500 });
       }
       return Response.json({ driveFileId: fileId });
 
@@ -113,7 +118,13 @@ Deno.serve(async (req) => {
 
       if (!res.ok) {
         const err = await res.text();
-        return Response.json({ error: `Drive POST failed: ${err}` }, { status: 500 });
+        if (res.status === 403) {
+          return Response.json({ error: 'Sem permissão para criar arquivo no Drive. Verifique as permissões da pasta.' }, { status: 403 });
+        }
+        if (res.status === 507 || (err && err.includes('storageQuotaExceeded'))) {
+          return Response.json({ error: 'Cota de armazenamento do Google Drive esgotada.' }, { status: 507 });
+        }
+        return Response.json({ error: `Drive POST failed (${res.status}): ${err}` }, { status: 500 });
       }
 
       const data = await res.json();

@@ -12,13 +12,20 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { query } = await req.json();
-    if (!query) return Response.json({ error: 'query required' }, { status: 400 });
+    if (!query || !query.trim()) return Response.json({ error: 'query required' }, { status: 400 });
+
+    const TIMEOUT_MS = 10000;
+    const fetchWithTimeout = (url) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+      return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+    };
 
     // ESearch — buscar PMIDs do último ano
-    const searchTerm = `${query} AND last 1 year[PDat]`;
+    const searchTerm = `${query.trim()} AND last 1 year[PDat]`;
     const esearchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmode=json&retmax=5&term=${encodeURIComponent(searchTerm)}`;
 
-    const esearchRes = await fetch(esearchUrl);
+    const esearchRes = await fetchWithTimeout(esearchUrl);
     if (!esearchRes.ok) throw new Error(`ESearch error: ${esearchRes.status}`);
     const esearchData = await esearchRes.json();
 
@@ -31,7 +38,7 @@ Deno.serve(async (req) => {
 
     // ESummary — buscar detalhes dos artigos
     const esummaryUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&retmode=json&id=${pmids.join(',')}`;
-    const esummaryRes = await fetch(esummaryUrl);
+    const esummaryRes = await fetchWithTimeout(esummaryUrl);
     if (!esummaryRes.ok) throw new Error(`ESummary error: ${esummaryRes.status}`);
     const esummaryData = await esummaryRes.json();
 
