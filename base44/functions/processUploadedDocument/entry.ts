@@ -8,7 +8,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const CHUNK_SIZE = 1200;
 const CHUNK_OVERLAP = 200;
-const GROQ_EMBED_MODEL = 'nomic-embed-text-v1.5';
+const GROQ_EMBED_MODELS = ['nomic-embed-text-v1.5', 'nomic-embed-text-v1_5'];
 
 function chunkText(text, size = CHUNK_SIZE, overlap = CHUNK_OVERLAP) {
   const chunks = [];
@@ -29,20 +29,18 @@ async function hashText(text) {
 }
 
 async function getEmbeddings(texts, groqKey) {
-  const resp = await fetch('https://api.groq.com/openai/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${groqKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ model: GROQ_EMBED_MODEL, input: texts }),
-  });
-  if (!resp.ok) {
-    const err = await resp.text();
-    throw new Error(`Groq embeddings error: ${err}`);
+  for (const model of GROQ_EMBED_MODELS) {
+    const resp = await fetch('https://api.groq.com/openai/v1/embeddings', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, input: texts }),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      return { embeddings: data.data.map(d => d.embedding), model };
+    }
   }
-  const data = await resp.json();
-  return data.data.map(d => d.embedding);
+  return null; // fallback: sem embedding — keyword search
 }
 
 /**
@@ -153,24 +151,25 @@ Deno.serve(async (req) => {
     let savedChunks = 0;
     for (let b = 0; b < chunks.length; b += EMBED_BATCH) {
       const batch = chunks.slice(b, b + EMBED_BATCH);
-      const embeddings = await getEmbeddings(batch, groqKey);
+      const embResult = await getEmbeddings(batch, groqKey);
 
       const SAVE_BATCH = 5;
       for (let s = 0; s < batch.length; s += SAVE_BATCH) {
         const saveBatch = batch.slice(s, s + SAVE_BATCH);
         await Promise.all(saveBatch.map(async (chunkText_, j) => {
           const hash = await hashText(chunkText_);
-          await base44.asServiceRole.entities.KnowledgeVector.create({
+          const record = {
             source_id: `upload_${session_id}_${file_name}`,
             source_name: file_name || 'documento',
             source_type: 'upload',
             chunk_index: b + s + j,
             chunk_text: chunkText_,
-            embedding: embeddings[s + j],
-            embedding_model: GROQ_EMBED_MODEL,
+            embedding_model: embResult ? embResult.model : 'keyword_only',
             folder_id: `upload_${session_id}`,
             content_hash: hash,
-          });
+          };
+          if (embResult) record.embedding = embResult.embeddings[s + j];
+          await base44.asServiceRole.entities.KnowledgeVector.create(record);
           savedChunks++;
         }));
       }
