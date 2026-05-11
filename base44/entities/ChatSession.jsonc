@@ -43,11 +43,16 @@
     "title"
   ],
   "rls": {
-    "create": null,
+    "create": {
+      "created_by": "{{user.email}}"
+    },
     "read": {
       "$or": [
         {
           "created_by": "{{user.email}}"
+        },
+        {
+          "data.is_shared": true
         },
         {
           "user_condition": {
