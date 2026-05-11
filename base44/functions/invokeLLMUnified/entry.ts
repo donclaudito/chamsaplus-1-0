@@ -31,6 +31,9 @@ async function callOpenAICompatible(endpoint, apiKey, messages, modelId, maxToke
   });
   if (!resp.ok) throw new Error(`API error (${resp.status}): ${await resp.text()}`);
   const data = await resp.json();
+  if (!Array.isArray(data.choices) || !data.choices[0]?.message?.content) {
+    throw new Error(`Resposta inesperada do provedor: ${JSON.stringify(data).slice(0, 200)}`);
+  }
   return {
     content: data.choices[0].message.content,
     input_tokens: data.usage?.prompt_tokens || 0,

@@ -9,7 +9,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
-    const { userId, approved } = await req.json();
+    const body = await req.json();
+    const { userId, approved } = body;
+
+    if (!userId || typeof userId !== 'string') {
+      return Response.json({ error: 'userId inválido ou ausente' }, { status: 400 });
+    }
+    if (typeof approved !== 'boolean') {
+      return Response.json({ error: 'approved deve ser um booleano' }, { status: 400 });
+    }
 
     await base44.asServiceRole.entities.User.update(userId, {
       is_approved: approved,

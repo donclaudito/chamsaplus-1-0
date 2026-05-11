@@ -128,10 +128,12 @@ Deno.serve(async (req) => {
       result = await callAnthropic(apiKey, messages, modelId, maxTokens, temperature);
     } else if (provider === 'google') {
       result = await callGoogle(apiKey, messages, modelId, maxTokens, temperature);
-    } else {
+    } else if (PROVIDER_ENDPOINTS[provider] !== undefined || cfg.base_url) {
       const baseUrl = cfg.base_url || PROVIDER_ENDPOINTS[provider];
-      if (!baseUrl) return Response.json({ error: `Provedor "${provider}" não suportado` }, { status: 400 });
+      if (!baseUrl) return Response.json({ error: `Provedor "${provider}" não suportado. Informe a Base URL manualmente.` }, { status: 400 });
       result = await callOpenAICompatible(baseUrl, apiKey, messages, modelId, maxTokens, temperature);
+    } else {
+      return Response.json({ error: `Provedor "${provider}" não reconhecido` }, { status: 400 });
     }
 
     const parsed = parseResponse(result.content);

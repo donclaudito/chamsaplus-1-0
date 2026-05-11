@@ -9,7 +9,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { title, messages } = await req.json();
+    const body = await req.json();
+    const { title, messages } = body;
+
+    if (title !== undefined && typeof title !== 'string') {
+      return Response.json({ error: 'title deve ser uma string' }, { status: 400 });
+    }
+    if (messages !== undefined && !Array.isArray(messages)) {
+      return Response.json({ error: 'messages deve ser um array' }, { status: 400 });
+    }
 
     const newSession = await base44.asServiceRole.entities.ChatSession.create({
       title: title || 'Nova Consulta',

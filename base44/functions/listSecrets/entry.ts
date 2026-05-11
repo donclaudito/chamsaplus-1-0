@@ -25,9 +25,10 @@ Deno.serve(async (req) => {
       return {
         name,
         configured: value.length > 0,
-        preview: value.length > 0 ? value.slice(0, 6) + '••••••••' : null,
       };
     });
+
+    console.info(`[listSecrets] Admin ${user.email} consultou secrets em ${new Date().toISOString()}`);
 
     return Response.json({ secrets: result });
   } catch (error) {

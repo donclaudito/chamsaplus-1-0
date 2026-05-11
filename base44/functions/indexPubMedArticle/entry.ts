@@ -87,21 +87,25 @@ Deno.serve(async (req) => {
     // Tentar gerar embeddings — fallback keyword search se falhar
     const embResult = await tryGetEmbeddings(chunks, groqKey);
 
-    await Promise.all(chunks.map(async (chunk, i) => {
-      const record = {
-        source_id,
-        source_name: titulo ? titulo.slice(0, 120) : `PubMed ${pmid}`,
-        source_type: 'knowledge',
-        chunk_index: i,
-        chunk_text: chunk,
-        embedding_model: embResult ? embResult.model : 'keyword_only',
-        folder_id,
-      };
-      if (embResult) {
-        record.embedding = embResult.embeddings[i];
-      }
-      await base44.asServiceRole.entities.KnowledgeVector.create(record);
-    }));
+    // Processar em lotes de 10 para evitar rate limits
+    const BATCH_SIZE = 10;
+    for (let b = 0; b < chunks.length; b += BATCH_SIZE) {
+      const batch = chunks.slice(b, b + BATCH_SIZE);
+      await Promise.all(batch.map(async (chunk, bi) => {
+        const i = b + bi;
+        const record = {
+          source_id,
+          source_name: titulo ? titulo.slice(0, 120) : `PubMed ${pmid}`,
+          source_type: 'knowledge',
+          chunk_index: i,
+          chunk_text: chunk,
+          embedding_model: embResult ? embResult.model : 'keyword_only',
+          folder_id,
+        };
+        if (embResult) record.embedding = embResult.embeddings[i];
+        await base44.asServiceRole.entities.KnowledgeVector.create(record);
+      }));
+    }
 
     return Response.json({
       success: true,

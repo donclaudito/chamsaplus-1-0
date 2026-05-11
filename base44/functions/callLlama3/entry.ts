@@ -62,6 +62,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: data.error?.message || 'Groq API error' }, { status: 500 });
     }
 
+    if (!Array.isArray(data.choices) || !data.choices[0]?.message?.content) {
+      return Response.json({ error: 'Resposta inesperada da Groq API' }, { status: 500 });
+    }
+
     const raw = data.choices[0].message.content;
     const parsed = parseResponse(raw);
 

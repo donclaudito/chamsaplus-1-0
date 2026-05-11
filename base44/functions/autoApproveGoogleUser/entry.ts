@@ -24,11 +24,11 @@ Deno.serve(async (req) => {
     const userId = event?.entity_id;
     if (!userId) return Response.json({ skipped: true, reason: 'no entity_id' });
 
-    // Fetch the user record
-    const users = await base44.asServiceRole.entities.User.list();
-    const targetUser = users.find(u => u.id === userId);
-
-    if (!targetUser) return Response.json({ skipped: true, reason: 'user not found' });
+    // Fetch the user record directly by ID
+    const targetUser = data || null;
+    if (!targetUser || targetUser.id !== userId) {
+      return Response.json({ skipped: true, reason: 'user not found in payload' });
+    }
 
     // If auth_provider is 'google', auto-approve
     if (targetUser.auth_provider === 'google') {
