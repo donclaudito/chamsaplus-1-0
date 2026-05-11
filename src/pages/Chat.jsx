@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
@@ -19,6 +20,7 @@ import { DEFAULT_DRIVE_FOLDER_ID } from '@/lib/appConfig';
 
 export default function Chat() {
   const { activeChat, activeChatId } = useOutletContext();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPaste, setShowPaste] = useState(false);
   const [usageLog, setUsageLog] = useState([]);
@@ -27,17 +29,12 @@ export default function Chat() {
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const currentUser = useRef(null);
-
-  // Load drive folder per user
+  // Load drive folder per user — reage a mudanças de conta
   useEffect(() => {
-    base44.auth.me().then(u => {
-      currentUser.current = u;
-      const key = `chamsa_drive_folder_${u?.email || 'default'}`;
-      const saved = localStorage.getItem(key);
-      setDriveFolderId(saved || DEFAULT_DRIVE_FOLDER_ID);
-    }).catch(() => {});
-  }, []);
+    const key = `chamsa_drive_folder_${user?.email || 'default'}`;
+    const saved = localStorage.getItem(key);
+    setDriveFolderId(saved || DEFAULT_DRIVE_FOLDER_ID);
+  }, [user?.email]);
 
   const { messages, setMessages, setMessagesAndPersist, resetMessages } = useChatMessages(activeChatId);
   const {
@@ -67,9 +64,9 @@ export default function Chat() {
 
   const handleSaveDriveFolder = useCallback((id) => {
     setDriveFolderId(id);
-    const email = currentUser.current?.email || 'default';
+    const email = user?.email || 'default';
     localStorage.setItem(`chamsa_drive_folder_${email}`, id);
-  }, []);
+  }, [user?.email]);
 
   const sendMessage = useCallback(async (text) => {
     if (!activeChatId || isLoading) return;
@@ -148,7 +145,6 @@ export default function Chat() {
 
     const hasDataBlocks = newMessages.some(m => m.role === 'data-block');
     const chosenModel = resolveModel(text, hasDataBlocks, hasVectorContext);
-    const authUser = currentUser.current || await base44.auth.me().catch(() => null);
 
     try {
       let responseContent;
@@ -196,7 +192,7 @@ export default function Chat() {
         output_tokens: outputTokens,
         estimated_cost_usd: estimatedCost,
         session_id: activeChatId,
-        user_id: authUser?.email || '',
+        user_id: user?.email || '',
         date_key: now.toISOString().slice(0, 10),
         month_key: now.toISOString().slice(0, 7),
       });
