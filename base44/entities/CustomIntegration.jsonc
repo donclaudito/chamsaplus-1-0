@@ -31,6 +31,10 @@
       "type": "string",
       "description": "JSON de exemplo serializado como string"
     },
+    "responseFormat": {
+      "type": "string",
+      "description": "Formato esperado da resposta da API ou mapeamento de campos (ex: choices[0].message.content)"
+    },
     "color": {
       "type": "string",
       "description": "Cor Tailwind para estiliza\u00e7\u00e3o (ex: text-violet-600)"
@@ -47,48 +51,5 @@
   "required": [
     "label",
     "baseUrl"
-  ],
-  "rls": {
-    "create": {
-      "user_condition": {
-        "isAuthenticated": true
-      }
-    },
-    "read": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "update": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "delete": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    }
-  }
+  ]
 }

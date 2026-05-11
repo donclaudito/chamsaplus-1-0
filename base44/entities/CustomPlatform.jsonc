@@ -6,6 +6,18 @@
       "type": "string",
       "description": "Nome do provedor (ex: Mistral, Together AI)"
     },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Texto",
+        "Imagem",
+        "\u00c1udio",
+        "Multimodal",
+        "Outro"
+      ],
+      "default": "Texto",
+      "description": "Tipo de modelo oferecido pela plataforma"
+    },
     "plans": {
       "type": "array",
       "description": "Lista de planos/modelos dispon\u00edveis nesta plataforma",

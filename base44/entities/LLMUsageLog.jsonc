@@ -12,14 +12,17 @@
     },
     "input_tokens": {
       "type": "number",
+      "minimum": 0,
       "description": "Tokens de entrada"
     },
     "output_tokens": {
       "type": "number",
+      "minimum": 0,
       "description": "Tokens de sa\u00edda"
     },
     "estimated_cost_usd": {
       "type": "number",
+      "minimum": 0,
       "description": "Custo estimado em USD"
     },
     "session_id": {
@@ -37,6 +40,20 @@
     "month_key": {
       "type": "string",
       "description": "M\u00eas no formato YYYY-MM para agrupamento mensal"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "error",
+        "timeout"
+      ],
+      "default": "success",
+      "description": "Status da chamada ao LLM"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Mensagem de erro, se houver"
     }
   },
   "required": [
