@@ -20,12 +20,28 @@ export default function IntegrationCard({ template, existingSecret, onRemove, is
   const [testResult, setTestResult] = useState(null);
   const [saved, setSaved] = useState(false);
 
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const isConfigured = existingSecret || saved;
 
-  const handleSave = () => {
-    localStorage.setItem(`chamsa_apikey_${template.id}`, apiKey);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    if (!apiKey.trim()) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await base44.functions.invoke('saveApiKey', {
+        secretName: template.secretName,
+        apiKey: apiKey.trim(),
+        provider: template.id,
+      });
+      setSaved(true);
+      setApiKey('');
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) {
+      setSaveError('Erro ao salvar. Tente novamente.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleTest = async () => {
@@ -118,12 +134,19 @@ export default function IntegrationCard({ template, existingSecret, onRemove, is
                         {showKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
                     </div>
-                    <Button size="sm" onClick={handleSave} className="shrink-0 gap-1.5">
-                      {saved ? <><Check className="w-3.5 h-3.5" /> Salvo</> : 'Salvar'}
+                    <Button size="sm" onClick={handleSave} disabled={saving || !apiKey.trim()} className="shrink-0 gap-1.5">
+                      {saving
+                        ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Salvando...</>
+                        : saved
+                        ? <><Check className="w-3.5 h-3.5" /> Salvo</>
+                        : 'Salvar'}
                     </Button>
                   </div>
+                  {saveError && (
+                    <p className="text-[10px] text-red-500 mt-1">{saveError}</p>
+                  )}
                   <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
-                    ⚠️ Para produção, configure <code className="bg-muted px-1 rounded">{template.secretName}</code> no painel de Secrets do dashboard.
+                    🔒 A chave é armazenada de forma segura no backend, nunca no navegador.
                   </p>
                 </div>
               )}
