@@ -3,28 +3,15 @@ import { Outlet } from 'react-router-dom';
 import { Menu, UserCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import AppSidebar from './AppSidebar';
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then((user) => {
-      setCurrentUser(user);
-    }).catch(() => {});
-  }, []);
-
-  // Limpa seleção ao trocar de usuário
-  useEffect(() => {
-    if (currentUser) {
-      queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
-      setActiveChatId(null);
-    }
-  }, [currentUser?.email]);
-
-  const { data: chatSessions = [], isLoading: chatsLoading } = useQuery({
+  const { data: chatSessions = [] } = useQuery({
     queryKey: ['chatSessions', currentUser?.email],
     queryFn: () => currentUser
       ? base44.entities.ChatSession.filter({ created_by: currentUser.email }, '-created_date', 50)
@@ -64,13 +51,10 @@ export default function AppLayout() {
   });
 
   const createChatMutation = useMutation({
-    mutationFn: () => {
-      if (!currentUser) throw new Error('Usuário não autenticado');
-      return base44.entities.ChatSession.create({
-        title: `Consulta ${chatSessions.length + 1}`,
-        messages: [{ role: 'assistant', content: 'Sessão iniciada, Doutor. Pronto para análise estratégica.', timestamp: new Date().toISOString() }]
-      });
-    },
+    mutationFn: () => base44.entities.ChatSession.create({
+      title: `Consulta ${chatSessions.length + 1}`,
+      messages: [{ role: 'assistant', content: 'Sessão iniciada, Doutor. Pronto para análise estratégica.', timestamp: new Date().toISOString() }],
+    }),
     onSuccess: (newChat) => {
       queryClient.setQueryData(['chatSessions', currentUser?.email], (old = []) => [newChat, ...old]);
       setActiveChatId(newChat.id);
@@ -98,8 +82,8 @@ export default function AppLayout() {
         chats={chatSessions}
         activeChatId={activeChatId}
         onSelectChat={(id) => { setActiveChatId(id); setSidebarOpen(false); }}
-        onNewChat={() => currentUser && createChatMutation.mutate()}
-        isCreating={createChatMutation.isPending || !currentUser}
+        onNewChat={() => createChatMutation.mutate()}
+        isCreating={createChatMutation.isPending}
         onDeleteChat={(id) => deleteChatMutation.mutate(id)}
         onBulkDelete={(ids) => bulkDeleteMutation.mutate(ids)}
         onRenameChat={(id, title) => renameChatMutation.mutate({ id, title })}
