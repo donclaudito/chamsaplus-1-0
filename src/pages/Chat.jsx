@@ -178,27 +178,15 @@ export default function Chat() {
       // Track usage
       setUsageLog(prev => [...prev, { modelId: chosenModel, inputTokens, outputTokens }]);
 
-      // Persist usage
-      const now = new Date();
-      const rates = {
-        'claude_sonnet_4_6': { input: 0.003, output: 0.015 },
-        'llama-3.3-70b-versatile': { input: 0.0001, output: 0.0001 },
-        'gpt_5_mini': { input: 0.00015, output: 0.0006 },
-      };
-      const r = rates[chosenModel] || { input: 0.001, output: 0.002 };
-      const estimatedCost = (inputTokens / 1000) * r.input + (outputTokens / 1000) * r.output;
+      // Persist usage via backend (avoids RLS issues)
       const modelMeta = MODELS.find(m => m.id === chosenModel);
-      base44.entities.LLMUsageLog.create({
+      base44.functions.invoke('logLLMUsage', {
         model_id: chosenModel,
         model_label: modelMeta?.label || chosenModel,
         input_tokens: inputTokens,
         output_tokens: outputTokens,
-        estimated_cost_usd: estimatedCost,
         session_id: activeChatId,
-        user_id: user?.email || '',
-        date_key: now.toISOString().slice(0, 10),
-        month_key: now.toISOString().slice(0, 7),
-      });
+      }).catch(() => {});
 
       const assistantMsg = {
         role: 'assistant',
