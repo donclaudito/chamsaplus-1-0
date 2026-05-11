@@ -47,16 +47,9 @@
       }
     },
     "read": {
-      "$or": [
-        {
-          "data.is_active": true
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "isAuthenticated": true
+      }
     },
     "update": {
       "user_condition": {
