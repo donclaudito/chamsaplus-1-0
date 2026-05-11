@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ExternalLink, Star, Zap, RefreshCw } from 'lucide-react';
+import { Loader2, ExternalLink, Star, Zap, RefreshCw, KeyRound } from 'lucide-react';
 import { LLM_PROVIDERS } from './LLMProviderRegistry';
 
 const EMPTY_FORM = {
@@ -223,12 +223,25 @@ export default function AddLLMProviderModal({ open, onClose }) {
 
           {/* Model ID — dynamic dropdown */}
           <div className="space-y-1.5">
-            <Label className="flex items-center gap-2">
+            <Label className="flex items-center gap-2 flex-wrap">
               ID do Modelo <span className="text-destructive">*</span>
               {modelsFetched && (
                 <span className="text-[10px] font-normal text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">
                   {dynamicModels.length} modelos carregados
                 </span>
+              )}
+              {selectedProvider?.docs && (
+                <a
+                  href={selectedProvider.docs}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Abrir documentação de ${selectedProvider.label}`}
+                  className={`flex items-center gap-1 text-[10px] font-medium underline underline-offset-2 ${selectedProvider.color} ml-auto`}
+                >
+                  <KeyRound className="w-3 h-3" />
+                  Obter chave
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               )}
             </Label>
             {(() => {
