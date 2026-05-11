@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
     const estimated_cost_usd = (input_tokens / 1000) * r.input + (output_tokens / 1000) * r.output;
 
     const now = new Date();
-    await base44.asServiceRole.entities.LLMUsageLog.create({
+    await base44.entities.LLMUsageLog.create({
       model_id,
       model_label: model_label || model_id,
       input_tokens,
