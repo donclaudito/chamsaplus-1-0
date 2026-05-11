@@ -64,10 +64,13 @@ export default function AppLayout() {
   });
 
   const createChatMutation = useMutation({
-    mutationFn: () => base44.entities.ChatSession.create({
-      title: `Consulta ${chatSessions.length + 1}`,
-      messages: [{ role: 'assistant', content: 'Sessão iniciada, Doutor. Pronto para análise estratégica.', timestamp: new Date().toISOString() }]
-    }),
+    mutationFn: () => {
+      if (!currentUser) throw new Error('Usuário não autenticado');
+      return base44.entities.ChatSession.create({
+        title: `Consulta ${chatSessions.length + 1}`,
+        messages: [{ role: 'assistant', content: 'Sessão iniciada, Doutor. Pronto para análise estratégica.', timestamp: new Date().toISOString() }]
+      });
+    },
     onSuccess: (newChat) => {
       queryClient.setQueryData(['chatSessions', currentUser?.email], (old = []) => [newChat, ...old]);
       setActiveChatId(newChat.id);
@@ -95,8 +98,8 @@ export default function AppLayout() {
         chats={chatSessions}
         activeChatId={activeChatId}
         onSelectChat={(id) => { setActiveChatId(id); setSidebarOpen(false); }}
-        onNewChat={() => createChatMutation.mutate()}
-        isCreating={createChatMutation.isPending}
+        onNewChat={() => currentUser && createChatMutation.mutate()}
+        isCreating={createChatMutation.isPending || !currentUser}
         onDeleteChat={(id) => deleteChatMutation.mutate(id)}
         onBulkDelete={(ids) => bulkDeleteMutation.mutate(ids)}
         onRenameChat={(id, title) => renameChatMutation.mutate({ id, title })}
