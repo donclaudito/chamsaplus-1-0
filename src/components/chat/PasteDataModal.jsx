@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Database } from 'lucide-react';
+import { X, Database, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,14 +8,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 export default function PasteDataModal({ open, onClose, onSubmit }) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const cleanTitle = (str) => {
+    return str.trim().replace(/\s+/g, ' ').replace(/[^\w\s\-áàâãéèêíïóôõöúçñ]/gi, '').slice(0, 100);
+  };
+
+  const handleSubmit = async () => {
     if (!content.trim()) return;
-    const finalTitle = title.trim() || `Laudo_Clinico_${new Date().getHours()}h${new Date().getMinutes()}`;
-    onSubmit(finalTitle, content.trim());
-    setTitle('');
-    setContent('');
-    onClose();
+    setIsSubmitting(true);
+    try {
+      const finalTitle = cleanTitle(title) || `Laudo_Clinico_${new Date().getHours()}h${new Date().getMinutes()}`;
+      await onSubmit(finalTitle, content.trim());
+      setTitle('');
+      setContent('');
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -46,9 +56,10 @@ export default function PasteDataModal({ open, onClose, onSubmit }) {
             />
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={handleSubmit} disabled={!content.trim()}>
-              Injetar na Sessão
+            <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
+            <Button onClick={handleSubmit} disabled={!content.trim() || isSubmitting}>
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              {isSubmitting ? 'Injetando...' : 'Injetar na Sessão'}
             </Button>
           </div>
         </div>

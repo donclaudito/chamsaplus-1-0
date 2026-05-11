@@ -15,15 +15,18 @@ const ThinkingIndicator = React.memo(function ThinkingIndicator() {
   useEffect(() => {
     const timer = setInterval(() => {
       setStage(prev => (prev < stages.length - 1 ? prev + 1 : prev));
-    }, 1800);
+    }, 1500);
     return () => clearInterval(timer);
   }, []);
 
   return (
     <div className="flex gap-3">
-      <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-        <Bot className="w-4 h-4 text-primary animate-pulse" />
-      </div>
+      <motion.div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-1"
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 2, repeat: Infinity }}
+      >
+        <Bot className="w-4 h-4 text-primary" />
+      </motion.div>
       <div className="bg-card border border-border rounded-2xl rounded-tl-md px-4 py-3">
         <motion.p
           key={stage}

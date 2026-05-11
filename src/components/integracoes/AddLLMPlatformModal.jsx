@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 
 const DEFAULT = {
   label: '',
@@ -135,7 +135,17 @@ export default function AddLLMPlatformModal({ open, onClose }) {
           </div>
 
           {error && (
-            <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">{error}</p>
+            <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <div className="flex-1">{error}</div>
+              <button
+                onClick={handleSubmit}
+                className="ml-2 font-medium hover:underline shrink-0"
+                aria-label="Tentar novamente"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            </div>
           )}
 
           <div className="flex justify-end gap-2 pt-1">
