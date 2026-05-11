@@ -5,7 +5,14 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+
+    // --- Auth guard: require authenticated user ---
+    let user;
+    try {
+      user = await base44.auth.me();
+    } catch (_) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { sessionId, sessionTitle, messages, folderId, driveFileId } = await req.json();
@@ -14,7 +21,24 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'sessionId and folderId are required' }, { status: 400 });
     }
 
-    const { accessToken } = await base44.asServiceRole.connectors.getConnection('googledrive');
+    // --- Security: verify the session belongs to the authenticated user ---
+    const session = await base44.asServiceRole.entities.ChatSession.get(sessionId);
+    if (!session) {
+      return Response.json({ error: 'Session not found' }, { status: 404 });
+    }
+    if (session.created_by !== user.email) {
+      return Response.json({ error: 'Forbidden: session does not belong to you' }, { status: 403 });
+    }
+
+    // --- Get Drive access token ---
+    let accessToken;
+    try {
+      const conn = await base44.asServiceRole.connectors.getConnection('googledrive');
+      accessToken = conn.accessToken;
+    } catch (_) {
+      return Response.json({ error: 'Google Drive connector not authorized' }, { status: 503 });
+    }
+
     const authHeader = { Authorization: `Bearer ${accessToken}` };
 
     const fileContent = JSON.stringify({
@@ -53,11 +77,17 @@ Deno.serve(async (req) => {
           body,
         }
       );
+
       if (!res.ok) {
         const err = await res.text();
+        // If the file was deleted externally, reset and recreate on next call
+        if (res.status === 404) {
+          return Response.json({ driveFileId: null, error: 'File not found on Drive, will recreate on next save' }, { status: 200 });
+        }
         return Response.json({ error: `Drive PATCH failed: ${err}` }, { status: 500 });
       }
       return Response.json({ driveFileId: fileId });
+
     } else {
       // POST — create new file in the folder
       const metadataWithParent = { ...metadata, parents: [folderId] };
@@ -80,10 +110,12 @@ Deno.serve(async (req) => {
           body,
         }
       );
+
       if (!res.ok) {
         const err = await res.text();
         return Response.json({ error: `Drive POST failed: ${err}` }, { status: 500 });
       }
+
       const data = await res.json();
       fileId = data.id;
 

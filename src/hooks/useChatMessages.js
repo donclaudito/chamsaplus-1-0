@@ -15,7 +15,7 @@ export function useChatMessages(activeChatId, { folderId, sessionTitle } = {}) {
       await base44.entities.ChatSession.update(activeChatId, { messages: newMessages });
 
       // 2. Mirror to Google Drive (fire-and-forget — don't block chat)
-      if (folderId) {
+      if (folderId && activeChatId) {
         base44.functions.invoke('saveChatToDrive', {
           sessionId: activeChatId,
           sessionTitle: sessionTitle || 'Chat sem título',
@@ -25,8 +25,12 @@ export function useChatMessages(activeChatId, { folderId, sessionTitle } = {}) {
         }).then(res => {
           if (res?.data?.driveFileId) {
             driveFileIdRef.current = res.data.driveFileId;
+          } else if (res?.data?.error) {
+            console.warn('[Drive backup] Erro ao salvar:', res.data.error);
           }
-        }).catch(() => {/* silent — Drive backup is best-effort */});
+        }).catch((err) => {
+          console.warn('[Drive backup] Falha na chamada:', err?.message || err);
+        });
       }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['chatSessions'] }),
