@@ -54,6 +54,14 @@ function hashEmbedding(text, dims = 256) {
 
 Deno.serve(async (req) => {
   try {
+    // Security: only accept calls from the Base44 platform (connector automations)
+    // The platform sends the APP_ID in the Authorization header as a Bearer token
+    const authHeader = req.headers.get('Authorization') || '';
+    const appId = Deno.env.get('BASE44_APP_ID');
+    if (!appId || authHeader !== `Bearer ${appId}`) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const base44 = createClientFromRequest(req);
     const body = await req.json();
 

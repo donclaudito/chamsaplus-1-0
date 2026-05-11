@@ -4,6 +4,14 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 // Auto-approves users that signed up via Google (identified by having a Google-format email or by checking provider)
 Deno.serve(async (req) => {
   try {
+    // Security: only accept calls from the Base44 platform (automations)
+    // The platform sends the APP_ID in the Authorization header as a Bearer token
+    const authHeader = req.headers.get('Authorization') || '';
+    const appId = Deno.env.get('BASE44_APP_ID');
+    if (!appId || authHeader !== `Bearer ${appId}`) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const base44 = createClientFromRequest(req);
     const body = await req.json();
 
