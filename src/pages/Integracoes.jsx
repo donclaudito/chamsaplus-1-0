@@ -5,7 +5,7 @@ import { Plus, Plug, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import IntegrationCard from '@/components/integracoes/IntegrationCard';
 import AddIntegrationModal from '@/components/integracoes/AddIntegrationModal';
-import AddLLMPlatformForm from '@/components/integracoes/AddLLMPlatformForm';
+import AddLLMProviderModal from '@/components/integracoes/AddLLMProviderModal';
 import SecretsStatusPanel from '@/components/integracoes/SecretsStatusPanel';
 
 const BUILT_IN_PROVIDERS = [
@@ -235,7 +235,7 @@ export default function Integracoes() {
         onClose={() => setModalOpen(false)}
         onAdd={handleAddCustom}
       />
-      <AddLLMPlatformForm
+      <AddLLMProviderModal
         open={llmFormOpen}
         onClose={() => setLlmFormOpen(false)}
       />
