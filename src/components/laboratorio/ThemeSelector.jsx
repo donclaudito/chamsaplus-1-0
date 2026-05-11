@@ -22,6 +22,8 @@ export default function ThemeSelector({ activeTheme, onChange }) {
               ${isActive ? 'border-primary shadow-md scale-[1.03]' : `${t.border} opacity-70 hover:opacity-100 hover:scale-[1.01]`}
             `}
             style={isActive ? { boxShadow: '0 0 0 3px hsl(var(--primary)/0.2)' } : {}}
+            aria-label={t.label}
+            aria-pressed={isActive}
           >
             {/* Mini preview swatch */}
             <span className={`w-5 h-5 rounded-md border ${t.border} ${t.bg} flex items-center justify-center`}>

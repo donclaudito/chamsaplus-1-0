@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Database, RefreshCw, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
+import { Database, RefreshCw, CheckCircle2, AlertCircle, Zap, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -12,17 +12,18 @@ export default function VectorIndexPanel() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  const { data: vectorCount, refetch: refetchCount } = useQuery({
-    queryKey: ['vectorCount'],
-    queryFn: () => base44.entities.KnowledgeVector.list('-created_date', 1).then(r => r),
-    select: () => base44.entities.KnowledgeVector.filter({}).then(r => r.length),
-  });
-
-  // Simpler count via list with large limit
-  const { data: allVectors, refetch } = useQuery({
+  const { data: allVectors, refetch, isLoading } = useQuery({
     queryKey: ['allVectors'],
-    queryFn: () => base44.entities.KnowledgeVector.list('-created_date', 500),
+    queryFn: async () => {
+      try {
+        return await base44.entities.KnowledgeVector.list('-created_date', 500);
+      } catch (e) {
+        console.error('Erro ao carregar vetores:', e);
+        return [];
+      }
+    },
     initialData: [],
+    staleTime: 60000,
   });
 
   const uniqueSources = [...new Set(allVectors.map(v => v.source_name))];
@@ -35,11 +36,26 @@ export default function VectorIndexPanel() {
     try {
       const res = await base44.functions.invoke('vectorizeKnowledge', { folder_id: folderId.trim() });
       setResult(res.data);
+      localStorage.setItem('chamsa_drive_folder', folderId.trim());
       refetch();
     } catch (e) {
       setError(e.message);
     } finally {
       setIndexing(false);
+    }
+  };
+
+  const handleClearIndex = async () => {
+    if (!confirm('Tem certeza que deseja limpar todo o índice vetorial? Esta ação não pode ser desfeita.')) return;
+    try {
+      const vectors = await base44.entities.KnowledgeVector.filter({});
+      for (const v of vectors) {
+        await base44.entities.KnowledgeVector.delete(v.id);
+      }
+      refetch();
+      setResult(null);
+    } catch (e) {
+      setError('Erro ao limpar índice: ' + e.message);
     }
   };
 
@@ -69,14 +85,31 @@ export default function VectorIndexPanel() {
             onChange={e => setFolderId(e.target.value)}
             placeholder="Ex: 1eWosMBtk9N5tICS..."
             className="font-mono text-xs"
+            aria-label="ID da pasta do Google Drive"
           />
-          <Button onClick={handleIndex} disabled={indexing || !folderId.trim()} className="shrink-0 gap-1.5">
+          <Button
+            onClick={handleIndex}
+            disabled={indexing || !folderId.trim()}
+            className="shrink-0 gap-1.5"
+            aria-label="Indexar pasta"
+          >
             {indexing ? (
               <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Indexando...</>
             ) : (
               <><Zap className="w-3.5 h-3.5" /> Indexar</>
             )}
           </Button>
+          {totalChunks > 0 && (
+            <Button
+              onClick={handleClearIndex}
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              aria-label="Limpar índice vetorial"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+            </Button>
+          )}
         </div>
         <p className="text-[11px] text-muted-foreground/60">
           Gera embeddings vetoriais dos documentos — necessário apenas quando os arquivos mudam.

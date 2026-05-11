@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ExternalLink, Star, Zap, RefreshCw, KeyRound } from 'lucide-react';
+import { Loader2, ExternalLink, Star, Zap, RefreshCw, KeyRound, AlertCircle } from 'lucide-react';
 import { LLM_PROVIDERS } from './LLMProviderRegistry';
 
 const EMPTY_FORM = {
@@ -208,6 +208,12 @@ export default function AddLLMProviderModal({ open, onClose }) {
               placeholder="https://api.exemplo.com/v1"
               value={form.baseUrl}
               onChange={e => set('baseUrl', e.target.value)}
+              aria-label="URL base da plataforma"
+              onBlur={(e) => {
+                if (e.target.value && !e.target.value.startsWith('https://') && !e.target.value.startsWith('http://')) {
+                  set('baseUrl', 'https://' + e.target.value);
+                }
+              }}
             />
           </div>
 
@@ -297,6 +303,7 @@ export default function AddLLMProviderModal({ open, onClose }) {
                   value={form.apiKey}
                   onChange={e => set('apiKey', e.target.value)}
                   className="flex-1"
+                  aria-label="Chave de API"
                 />
                 <Button
                   type="button"
@@ -319,7 +326,10 @@ export default function AddLLMProviderModal({ open, onClose }) {
           )}
 
           {error && (
-            <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">{error}</p>
+            <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg" role="alert">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <div className="flex-1">{error}</div>
+            </div>
           )}
 
           <div className="flex justify-end gap-2 pt-1">

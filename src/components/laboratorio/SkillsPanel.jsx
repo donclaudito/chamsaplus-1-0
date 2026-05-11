@@ -82,7 +82,7 @@ export default function SkillsPanel() {
             </span>
           )}
         </div>
-        <Button size="sm" onClick={handleNew} className="gap-1.5">
+        <Button size="sm" onClick={handleNew} className="gap-1.5" aria-label="Criar nova skill">
           <Plus className="w-3.5 h-3.5" />
           Nova Skill
         </Button>
@@ -137,13 +137,19 @@ export default function SkillsPanel() {
                 />
                 <button
                   onClick={() => handleEdit(skill)}
-                  className="p-1.5 rounded-lg hover:bg-muted opacity-0 group-hover:opacity-100 transition-all"
+                  className="p-1.5 rounded-lg hover:bg-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all focus:opacity-100 focus:outline-none"
+                  aria-label={`Editar skill ${skill.title}`}
                 >
                   <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                 </button>
                 <button
-                  onClick={() => deleteMutation.mutate(skill.id)}
-                  className="p-1.5 rounded-lg hover:bg-red-100 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                  onClick={() => {
+                    if (confirm(`Deseja deletar a skill "${skill.title}"?`)) {
+                      deleteMutation.mutate(skill.id);
+                    }
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-red-100 hover:text-red-500 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all focus:opacity-100 focus:outline-none"
+                  aria-label={`Deletar skill ${skill.title}`}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

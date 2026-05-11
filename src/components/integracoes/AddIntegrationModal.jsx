@@ -65,7 +65,11 @@ export default function AddIntegrationModal({ open, onClose, onAdd }) {
           >
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-foreground">Nova Integração</h2>
-              <button onClick={onClose} className="p-1 rounded-md hover:bg-muted transition-colors">
+              <button
+                onClick={onClose}
+                className="p-1 rounded-md hover:bg-muted transition-colors"
+                aria-label="Fechar modal"
+              >
                 <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
@@ -82,11 +86,28 @@ export default function AddIntegrationModal({ open, onClose, onAdd }) {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1 block">Base URL</label>
-                  <Input value={form.baseUrl} onChange={e => set('baseUrl', e.target.value)} className="text-xs font-mono" />
+                  <Input
+                    value={form.baseUrl}
+                    onChange={e => set('baseUrl', e.target.value)}
+                    placeholder="https://api.exemplo.com/v1"
+                    className="text-xs font-mono"
+                    aria-label="Base URL da integração"
+                    onBlur={(e) => {
+                      if (e.target.value && !e.target.value.startsWith('https://') && !e.target.value.startsWith('http://')) {
+                        set('baseUrl', 'https://' + e.target.value);
+                      }
+                    }}
+                  />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1 block">Endpoint</label>
-                  <Input value={form.endpoint} onChange={e => set('endpoint', e.target.value)} className="text-xs font-mono" />
+                  <Input
+                    value={form.endpoint}
+                    onChange={e => set('endpoint', e.target.value)}
+                    placeholder="/chat/completions"
+                    className="text-xs font-mono"
+                    aria-label="Endpoint da integração"
+                  />
                 </div>
               </div>
               <div>
@@ -102,6 +123,8 @@ export default function AddIntegrationModal({ open, onClose, onAdd }) {
                       key={c.id}
                       onClick={() => set('colorId', c.id)}
                       className={`w-6 h-6 rounded-full border-2 transition-all ${c.bg} ${form.colorId === c.id ? 'border-primary scale-110' : 'border-transparent'}`}
+                      aria-label={`Cor ${c.id}`}
+                      aria-pressed={form.colorId === c.id}
                     />
                   ))}
                 </div>
