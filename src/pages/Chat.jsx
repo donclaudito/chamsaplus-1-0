@@ -25,6 +25,7 @@ export default function Chat() {
   const [showPaste, setShowPaste] = useState(false);
   const [usageLog, setUsageLog] = useState([]);
   const [driveFolderId, setDriveFolderId] = useState(DEFAULT_DRIVE_FOLDER_ID);
+  const [uploadedDocs, setUploadedDocs] = useState([]);
 
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
@@ -55,6 +56,7 @@ export default function Chat() {
     if (activeChat?.messages) resetMessages(activeChat.messages);
     else resetMessages([]);
     setUsageLog([]);
+    setUploadedDocs([]);
     closeCanvas();
   }, [activeChatId]);
 
@@ -70,6 +72,40 @@ export default function Chat() {
     const email = user?.email || 'default';
     localStorage.setItem(`chamsa_drive_folder_${email}`, id);
   }, [user?.email]);
+
+  const handleUploadDocument = useCallback(async (file) => {
+    if (!activeChatId) return;
+    const docId = `${Date.now()}_${file.name}`;
+    setUploadedDocs(prev => [...prev, { id: docId, name: file.name, status: 'processing' }]);
+
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const res = await base44.functions.invoke('processUploadedDocument', {
+        file_url,
+        file_name: file.name,
+        file_type: file.type,
+        session_id: activeChatId,
+      });
+
+      if (res.data?.success) {
+        setUploadedDocs(prev =>
+          prev.map(d => d.id === docId ? { ...d, status: 'ready', folderId: res.data.folder_id } : d)
+        );
+        // Send an automatic message informing the document was indexed
+        sendMessage(`Acabei de enviar o documento "${file.name}". Ele foi indexado e está disponível para consulta. Faça um resumo do documento.`);
+      } else {
+        throw new Error(res.data?.error || 'Erro desconhecido');
+      }
+    } catch (err) {
+      setUploadedDocs(prev =>
+        prev.map(d => d.id === docId ? { ...d, status: 'error' } : d)
+      );
+    }
+  }, [activeChatId]);
+
+  const handleRemoveDoc = useCallback((docId) => {
+    setUploadedDocs(prev => prev.filter(d => d.id !== docId));
+  }, []);
 
   const sendMessage = useCallback(async (text) => {
     if (!activeChatId || isLoading) return;
@@ -109,22 +145,28 @@ export default function Chat() {
       }
     } catch (_) {}
 
-    // RAG semantic search
+    // RAG semantic search — Drive folder + uploaded docs na sessão
     let driveContext = '';
     let hasVectorContext = false;
-    if (driveFolderId) {
+
+    const ragFolders = [];
+    if (driveFolderId) ragFolders.push(driveFolderId);
+    const readyDocs = uploadedDocs.filter(d => d.status === 'ready');
+    if (readyDocs.length > 0) ragFolders.push(`upload_${activeChatId}`);
+
+    for (const folderId of ragFolders) {
       try {
         const ragRes = await base44.functions.invoke('semanticSearch', {
           query: text,
-          folder_id: driveFolderId,
+          folder_id: folderId,
           top_k: 6,
         });
         const chunks = ragRes.data?.chunks || [];
-        if (chunks.length > 0 && chunks[0].score > 0.4) {
+        if (chunks.length > 0 && chunks[0].score > 0.35) {
           hasVectorContext = true;
-          driveContext = '\n\nCONTEXTO RECUPERADO VIA RAG (chunks mais relevantes):\n' +
+          driveContext += '\n\nCONTEXTO RECUPERADO VIA RAG (chunks mais relevantes):\n' +
             chunks
-              .filter(c => c.score > 0.35)
+              .filter(c => c.score > 0.3)
               .map(c => `[${c.source_name} — sim: ${c.score.toFixed(2)}]\n${c.chunk_text}`)
               .join('\n\n---\n\n');
         }
@@ -315,6 +357,9 @@ export default function Chat() {
           onSend={sendMessage}
           onPaste={() => setShowPaste(true)}
           onTool={handleTool}
+          onUpload={handleUploadDocument}
+          onRemoveDoc={handleRemoveDoc}
+          uploadedDocs={uploadedDocs}
           isLoading={isLoading}
           canvasMode={canvasMode}
         />

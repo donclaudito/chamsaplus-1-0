@@ -1,11 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, ClipboardPaste, Loader2, LayoutPanelLeft, X } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Send, ClipboardPaste, Loader2, LayoutPanelLeft, X, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
+import UploadedDocBadge from './UploadedDocBadge';
 
-export default function ChatInput({ onSend, onPaste, onTool, isLoading, canvasMode }) {
+export default function ChatInput({ onSend, onPaste, onTool, onUpload, isLoading, canvasMode, uploadedDocs, onRemoveDoc }) {
   const [input, setInput] = useState('');
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file && onUpload) onUpload(file);
+    e.target.value = '';
+  };
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
@@ -32,6 +40,13 @@ export default function ChatInput({ onSend, onPaste, onTool, isLoading, canvasMo
 
   return (
     <div className="border-t border-border bg-card/80 backdrop-blur-sm p-3 sm:p-4 shrink-0 pb-[env(safe-area-inset-bottom,12px)]">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.docx,.txt,.md,.csv"
+        className="hidden"
+        onChange={handleFileChange}
+      />
       <div className="max-w-2xl mx-auto">
 
         {/* Canvas mode indicator */}
@@ -61,6 +76,7 @@ export default function ChatInput({ onSend, onPaste, onTool, isLoading, canvasMo
           )}
         </AnimatePresence>
 
+        <UploadedDocBadge docs={uploadedDocs} onRemove={onRemoveDoc} />
         <div className="flex items-end gap-2 bg-muted/40 border border-border rounded-2xl p-2">
           {/* Paste clinical data */}
           <button
@@ -69,6 +85,15 @@ export default function ChatInput({ onSend, onPaste, onTool, isLoading, canvasMo
             title="Injetar dados clínicos"
           >
             <ClipboardPaste className="w-4 h-4" />
+          </button>
+
+          {/* Upload document */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all shrink-0 touch-manipulation active:bg-primary/10"
+            title="Enviar documento (PDF, DOCX, TXT)"
+          >
+            <Paperclip className="w-4 h-4" />
           </button>
 
           {/* Canvas toggle button */}
