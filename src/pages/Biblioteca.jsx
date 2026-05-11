@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { FolderSearch, Upload, FileText, Trash2, Search, Plus, BrainCircuit } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -25,10 +26,12 @@ export default function Biblioteca() {
   const [newDoc, setNewDoc] = useState({ title: '', content: '', category: 'outro' });
   const [isUploading, setIsUploading] = useState(false);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['knowledge'],
-    queryFn: () => base44.entities.Knowledge.list('-created_date', 100),
+    queryKey: ['knowledge', user?.email],
+    queryFn: () => base44.entities.Knowledge.filter({ created_by: user.email }, '-created_date', 100),
+    enabled: !!user?.email,
     initialData: [],
   });
 
