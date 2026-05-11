@@ -5,6 +5,7 @@ import { Plus, Plug, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import IntegrationCard from '@/components/integracoes/IntegrationCard';
 import AddIntegrationModal from '@/components/integracoes/AddIntegrationModal';
+import AddLLMPlatformForm from '@/components/integracoes/AddLLMPlatformForm';
 import SecretsStatusPanel from '@/components/integracoes/SecretsStatusPanel';
 
 const BUILT_IN_PROVIDERS = [
@@ -94,6 +95,7 @@ const BUILT_IN_PROVIDERS = [
 
 export default function Integracoes() {
   const [modalOpen, setModalOpen] = useState(false);
+  const [llmFormOpen, setLlmFormOpen] = useState(false);
   const [configuredSecrets, setConfiguredSecrets] = useState([]);
   const queryClient = useQueryClient();
 
@@ -152,10 +154,16 @@ export default function Integracoes() {
               <p className="text-xs text-muted-foreground">Configure e teste provedores LLM externos</p>
             </div>
           </div>
-          <Button size="sm" onClick={() => setModalOpen(true)} className="gap-1.5 shrink-0">
-            <Plus className="w-3.5 h-3.5" />
-            Adicionar
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setLlmFormOpen(true)} className="gap-1.5 shrink-0">
+              <Plus className="w-3.5 h-3.5" />
+              Nova Plataforma LLM
+            </Button>
+            <Button size="sm" onClick={() => setModalOpen(true)} className="gap-1.5 shrink-0">
+              <Plus className="w-3.5 h-3.5" />
+              Adicionar
+            </Button>
+          </div>
         </div>
 
         {/* Status bar */}
@@ -226,6 +234,10 @@ export default function Integracoes() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onAdd={handleAddCustom}
+      />
+      <AddLLMPlatformForm
+        open={llmFormOpen}
+        onClose={() => setLlmFormOpen(false)}
       />
     </div>
     </div>
