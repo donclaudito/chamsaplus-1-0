@@ -35,9 +35,6 @@
     "title"
   ],
   "rls": {
-    "create": {
-      "authenticated": true
-    },
     "read": {
       "record_condition": {
         "field": "created_by",
