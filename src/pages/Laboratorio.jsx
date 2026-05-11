@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import { Beaker, Brain, Shield, Zap, History, Activity, CheckCircle2, Sparkles, Palette, LayoutGrid, Database } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +37,8 @@ const TABS = [
 ];
 
 export default function Laboratorio() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [theme, setTheme] = useState(() => localStorage.getItem('lab_theme') || 'light');
   const [activeTab, setActiveTab] = useState('lab');
 
@@ -78,7 +81,7 @@ export default function Laboratorio() {
 
       {/* Tab Bar */}
       <div className={`shrink-0 mx-4 sm:mx-6 mb-4 flex gap-1 p-1 rounded-xl border ${tabBarBg}`}>
-        {TABS.map((tab) => {
+        {TABS.filter(tab => tab.id !== 'skills' || isAdmin).map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
@@ -183,7 +186,7 @@ export default function Laboratorio() {
             </motion.div>
           )}
 
-          {activeTab === 'skills' && (
+          {activeTab === 'skills' && isAdmin && (
             <motion.div
               key="skills"
               initial={{ opacity: 0, x: 12 }}
