@@ -36,7 +36,10 @@ export default function Chat() {
     setDriveFolderId(saved || DEFAULT_DRIVE_FOLDER_ID);
   }, [user?.email]);
 
-  const { messages, setMessages, setMessagesAndPersist, resetMessages, isSaving, saveError } = useChatMessages(activeChatId);
+  const { messages, setMessages, setMessagesAndPersist, resetMessages, isSaving, saveError } = useChatMessages(activeChatId, {
+    folderId: driveFolderId,
+    sessionTitle: activeChat?.title,
+  });
   const {
     manualModel, setManualModel,
     activeModel, activeLLMBadge,
