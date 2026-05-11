@@ -12,6 +12,9 @@ export function useChatMessages(activeChatId) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['chatSessions'] }),
   });
 
+  const isSaving = updateChatMutation.isPending;
+  const saveError = updateChatMutation.isError;
+
   const addMessage = (msg) => {
     setMessages((prev) => [...prev, msg]);
     return msg;
@@ -32,5 +35,7 @@ export function useChatMessages(activeChatId) {
     addMessage,
     setMessagesAndPersist,
     resetMessages,
+    isSaving,
+    saveError,
   };
 }

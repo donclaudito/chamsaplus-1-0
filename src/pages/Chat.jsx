@@ -36,7 +36,7 @@ export default function Chat() {
     setDriveFolderId(saved || DEFAULT_DRIVE_FOLDER_ID);
   }, [user?.email]);
 
-  const { messages, setMessages, setMessagesAndPersist, resetMessages } = useChatMessages(activeChatId);
+  const { messages, setMessages, setMessagesAndPersist, resetMessages, isSaving, saveError } = useChatMessages(activeChatId);
   const {
     manualModel, setManualModel,
     activeModel, activeLLMBadge,
@@ -245,6 +245,23 @@ export default function Chat() {
     <div className="flex h-full overflow-hidden min-h-0">
       {/* Chat Column — oculta em mobile quando canvas está aberto */}
       <div className={`flex flex-col min-w-0 transition-all duration-300 ${canvasContent ? 'hidden sm:flex sm:w-[400px] sm:shrink-0 sm:border-r sm:border-border' : 'flex-1'}`}>
+        {/* Save status indicator */}
+        {(isSaving || saveError) && (
+          <div className={`flex items-center justify-center gap-1.5 px-3 py-1 text-[11px] font-medium ${saveError ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}`}>
+            {isSaving && (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-pulse inline-block" />
+                Salvando histórico...
+              </>
+            )}
+            {saveError && (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-destructive inline-block" />
+                Erro ao salvar histórico — verifique sua conexão
+              </>
+            )}
+          </div>
+        )}
         <LLMUsageBar usageLog={usageLog} />
 
         {/* Model routing bar */}
