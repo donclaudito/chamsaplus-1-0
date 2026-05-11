@@ -36,12 +36,20 @@
   ],
   "rls": {
     "create": {
-      "created_by": "{{user.email}}",
-      "user_condition": {
-        "isAuthenticated": true
-      }
+      "created_by": "{{user.email}}"
     },
-    "read": null,
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
     "update": {
       "$or": [
         {
