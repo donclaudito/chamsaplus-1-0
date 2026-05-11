@@ -16,7 +16,7 @@ const navItems = [
   { path: '/integracoes', icon: Plug, label: 'Integrações', color: 'text-amber-400' },
 ];
 
-function ChatContextMenu({ chat, onClose, onRename, onPin, onDelete, onShare }) {
+function ChatContextMenu({ chat, onClose, onRename, onPin, onDelete, onShare, isDeleting = false }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -25,11 +25,17 @@ function ChatContextMenu({ chat, onClose, onRename, onPin, onDelete, onShare }) 
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
 
+  const handleDelete = () => {
+    if (confirm(`Tem certeza que deseja excluir "${chat.title}"? Esta ação não pode ser desfeita.`)) {
+      onDelete();
+    }
+  };
+
   const items = [
     { icon: Share2, label: 'Compartilhar conversa', action: onShare, color: '' },
     { icon: chat.pinned ? PinOff : Pin, label: chat.pinned ? 'Desafixar' : 'Fixar', action: onPin, color: '' },
     { icon: Pencil, label: 'Renomear', action: onRename, color: '' },
-    { icon: Trash2, label: 'Excluir', action: onDelete, color: 'text-red-500' },
+    { icon: Trash2, label: 'Excluir', action: handleDelete, color: 'text-red-500', disabled: isDeleting },
   ];
 
   return (
@@ -41,11 +47,13 @@ function ChatContextMenu({ chat, onClose, onRename, onPin, onDelete, onShare }) 
       transition={{ duration: 0.12 }}
       className="absolute right-0 top-8 z-50 w-52 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
     >
-      {items.map(({ icon: Icon, label, action, color }) => (
+      {items.map(({ icon: Icon, label, action, color, disabled }) => (
         <button
           key={label}
-          onClick={(e) => { e.stopPropagation(); action(); onClose(); }}
-          className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-slate-100 transition-colors text-left ${color || 'text-slate-700'}`}
+          onClick={(e) => { e.stopPropagation(); if (!disabled) action(); onClose(); }}
+          disabled={disabled}
+          className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-slate-100 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed ${color || 'text-slate-700'}`}
+          aria-label={label}
         >
           <Icon className="w-3.5 h-3.5 shrink-0" />
           {label}
@@ -55,24 +63,40 @@ function ChatContextMenu({ chat, onClose, onRename, onPin, onDelete, onShare }) 
   );
 }
 
-function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose: closeSidebar }) {
+function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose: closeSidebar, isDeletingId = null, isPinningId = null }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(chat.title);
   const [shareOpen, setShareOpen] = useState(false);
+  const [renameError, setRenameError] = useState('');
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (renaming && inputRef.current) inputRef.current.focus();
   }, [renaming]);
 
-  const handleRenameConfirm = () => {
+  const handleRenameConfirm = async () => {
     const trimmed = renameValue.trim();
-    if (trimmed && trimmed !== chat.title) onRename(chat.id, trimmed);
-    setRenaming(false);
+    setRenameError('');
+    if (!trimmed) {
+      setRenameError('O título não pode estar vazio');
+      return;
+    }
+    if (trimmed === chat.title) {
+      setRenaming(false);
+      return;
+    }
+    try {
+      await onRename(chat.id, trimmed);
+      setRenaming(false);
+    } catch (e) {
+      setRenameError('Erro ao renomear: ' + (e.message || 'Tente novamente'));
+    }
   };
 
   const handleShare = () => setShareOpen(true);
+  const isDeleting = isDeletingId === chat.id;
+  const isPinning = isPinningId === chat.id;
 
   return (
     <div className={`group relative flex items-center rounded-lg transition-all ${isActive ? 'bg-primary/10' : 'hover:bg-slate-200'}`}>
@@ -81,20 +105,27 @@ function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose
       )}
 
       {renaming ? (
-        <div className="flex-1 flex items-center gap-1 px-2 py-1.5">
-          <input
-            ref={inputRef}
-            value={renameValue}
-            onChange={e => setRenameValue(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleRenameConfirm(); if (e.key === 'Escape') setRenaming(false); }}
-            className="flex-1 bg-white border border-primary/40 rounded-md px-2 py-1 text-xs text-slate-800 outline-none"
-          />
-          <button onClick={handleRenameConfirm} className="p-1 hover:bg-primary/10 rounded-md">
-            <Check className="w-3 h-3 text-primary" />
-          </button>
-          <button onClick={() => setRenaming(false)} className="p-1 hover:bg-slate-200 rounded-md">
-            <X className="w-3 h-3 text-slate-400" />
-          </button>
+        <div className="flex-1 flex flex-col gap-0.5 px-2 py-1.5">
+          <div className="flex items-center gap-1">
+            <input
+              ref={inputRef}
+              value={renameValue}
+              onChange={e => { setRenameValue(e.target.value); setRenameError(''); }}
+              onKeyDown={e => { if (e.key === 'Enter') handleRenameConfirm(); if (e.key === 'Escape') { setRenaming(false); setRenameError(''); } }}
+              className="flex-1 bg-white border border-primary/40 rounded-md px-2 py-1 text-xs text-slate-800 outline-none"
+              aria-label="Novo título do chat"
+              maxLength={100}
+            />
+            <button onClick={handleRenameConfirm} className="p-1 hover:bg-primary/10 rounded-md" aria-label="Confirmar renomeação">
+              <Check className="w-3 h-3 text-primary" />
+            </button>
+            <button onClick={() => { setRenaming(false); setRenameError(''); }} className="p-1 hover:bg-slate-200 rounded-md" aria-label="Cancelar renomeação">
+              <X className="w-3 h-3 text-slate-400" />
+            </button>
+          </div>
+          {renameError && (
+            <p className="text-[10px] text-red-500 px-1">{renameError}</p>
+          )}
         </div>
       ) : (
         <button
@@ -109,10 +140,15 @@ function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose
         <div className="relative shrink-0">
           <button
             onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
-            className="opacity-0 group-hover:opacity-100 touch:opacity-100 p-2 mr-1 hover:bg-slate-300 rounded-md transition-all active:bg-slate-300"
-            title="Opções"
+            className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 touch:opacity-100 p-2 mr-1 hover:bg-slate-300 rounded-md transition-all active:bg-slate-300 focus:outline-none"
+            aria-label={`Opções para ${chat.title}`}
+            disabled={isDeleting || isPinning}
           >
-            <MoreVertical className="w-3.5 h-3.5 text-slate-500" />
+            {isDeleting ? (
+              <div className="w-3.5 h-3.5 border-2 border-red-400 border-t-red-600 rounded-full animate-spin" />
+            ) : (
+              <MoreVertical className="w-3.5 h-3.5 text-slate-500" />
+            )}
           </button>
 
           <AnimatePresence>
@@ -124,10 +160,22 @@ function ChatItem({ chat, isActive, onSelect, onDelete, onRename, onPin, onClose
                 onPin={() => onPin(chat.id, !chat.pinned)}
                 onDelete={() => onDelete(chat.id)}
                 onShare={handleShare}
+                isDeleting={isDeleting}
               />
             )}
           </AnimatePresence>
         </div>
+      )}
+
+      {isPinning && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-slate-900/20 rounded-lg flex items-center justify-center pointer-events-none"
+        >
+          <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </motion.div>
       )}
 
       <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} chat={chat} />
@@ -140,6 +188,9 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
   const { user } = useAuth();
   const [selected, setSelected] = useState(new Set());
   const [selectMode, setSelectMode] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [pinningId, setPinningId] = useState(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const sorted = [...chats].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
@@ -151,11 +202,43 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
     });
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selected.size === 0) return;
-    onBulkDelete([...selected]);
-    setSelected(new Set());
-    setSelectMode(false);
+    if (!confirm(`Tem certeza que deseja excluir ${selected.size} conversa(s)? Esta ação não pode ser desfeita.`)) return;
+    setBulkDeleting(true);
+    try {
+      await onBulkDelete([...selected]);
+      setSelected(new Set());
+      setSelectMode(false);
+    } catch (e) {
+      console.error('Erro ao deletar em bloco:', e);
+      alert('Erro ao excluir conversas: ' + (e.message || 'Tente novamente'));
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const handleDeleteChat = async (id) => {
+    setDeletingId(id);
+    try {
+      await onDeleteChat(id);
+    } catch (e) {
+      console.error('Erro ao deletar chat:', e);
+      alert('Erro ao excluir conversa: ' + (e.message || 'Tente novamente'));
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handlePinChat = async (id, pinned) => {
+    setPinningId(id);
+    try {
+      await onPinChat(id, pinned);
+    } catch (e) {
+      console.error('Erro ao fixar chat:', e);
+    } finally {
+      setPinningId(null);
+    }
   };
 
   const toggleSelectMode = () => {
@@ -222,45 +305,66 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
             <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Sessões</span>
             <div className="flex items-center gap-1">
               {/* Select mode toggle */}
-              <button
-                onClick={toggleSelectMode}
-                className={`p-1 rounded-lg transition-colors text-[10px] font-semibold ${selectMode ? 'bg-primary/15 text-primary' : 'hover:bg-slate-200 text-slate-500'}`}
-                title="Selecionar para exclusão em bloco"
-              >
-                <CheckSquare className="w-3.5 h-3.5" />
-              </button>
+                  <button
+                    onClick={toggleSelectMode}
+                    className={`p-1 rounded-lg transition-colors text-[10px] font-semibold focus:outline-none ${selectMode ? 'bg-primary/15 text-primary' : 'hover:bg-slate-200 text-slate-500'}`}
+                    aria-label={selectMode ? 'Sair do modo seleção' : 'Entrar no modo seleção'}
+                    aria-pressed={selectMode}
+                  >
+                    <CheckSquare className="w-3.5 h-3.5" />
+                  </button>
               {/* New chat button — disabled while creating */}
-              <button
-                onClick={() => { if (!isCreating) { onNewChat(); onClose(); } }}
-                disabled={isCreating}
-                className="p-1 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-40"
-                title="Nova consulta"
-              >
-                <Plus className="w-3.5 h-3.5 text-slate-500" />
-              </button>
+               <button
+                 onClick={() => { if (!isCreating) { onNewChat(); onClose(); } }}
+                 disabled={isCreating}
+                 className="p-1 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-40 focus:outline-none"
+                 aria-label="Nova consulta"
+               >
+                 {isCreating ? (
+                   <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin" />
+                 ) : (
+                   <Plus className="w-3.5 h-3.5 text-slate-500" />
+                 )}
+               </button>
             </div>
           </div>
 
           {/* Bulk delete bar */}
           {selectMode && (
-            <div className="flex items-center justify-between mb-2 px-1 py-1.5 bg-red-50 border border-red-200 rounded-lg">
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="flex items-center justify-between mb-2 px-1 py-1.5 bg-red-50 border border-red-200 rounded-lg"
+            >
               <span className="text-[10px] text-red-600 font-semibold">{selected.size} selecionada(s)</span>
               <div className="flex gap-1">
                 <button
                   onClick={() => setSelected(new Set(sorted.map(c => c.id)))}
-                  className="text-[10px] text-slate-500 hover:text-slate-700 px-1"
+                  className="text-[10px] text-slate-500 hover:text-slate-700 px-1 focus:outline-none"
+                  aria-label="Selecionar todas"
                 >
                   Todas
                 </button>
                 <button
                   onClick={handleBulkDelete}
-                  disabled={selected.size === 0}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-red-500 text-white rounded-md text-[10px] font-semibold disabled:opacity-40 hover:bg-red-600 transition-colors"
+                  disabled={selected.size === 0 || bulkDeleting}
+                  className="flex items-center gap-1 px-2 py-0.5 bg-red-500 text-white rounded-md text-[10px] font-semibold disabled:opacity-40 hover:bg-red-600 transition-colors focus:outline-none"
+                  aria-label={`Excluir ${selected.size} conversa(s)`}
                 >
-                  <Trash2 className="w-3 h-3" /> Excluir
+                  {bulkDeleting ? (
+                    <>
+                      <div className="w-2.5 h-2.5 border border-white border-t-transparent rounded-full animate-spin" />
+                      Excluindo...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3 h-3" /> Excluir
+                    </>
+                  )}
                 </button>
               </div>
-            </div>
+            </motion.div>
           )}
 
           <div className="space-y-0.5">
@@ -279,10 +383,12 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
                     chat={chat}
                     isActive={chat.id === activeChatId}
                     onSelect={onSelectChat}
-                    onDelete={onDeleteChat}
+                    onDelete={handleDeleteChat}
                     onRename={onRenameChat}
-                    onPin={onPinChat}
+                    onPin={handlePinChat}
                     onClose={onClose}
+                    isDeletingId={deletingId}
+                    isPinningId={pinningId}
                   />
                 </div>
               </div>
