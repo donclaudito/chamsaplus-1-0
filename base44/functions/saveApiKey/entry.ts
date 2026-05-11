@@ -19,15 +19,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'secretName e apiKey são obrigatórios' }, { status: 400 });
     }
 
-    // Map secretName to provider
+    // Provedores válidos explicitamente definidos
+    const VALID_PROVIDERS = ['openai', 'anthropic', 'groq', 'google', 'mistral', 'together', 'deepseek', 'xai', 'perplexity', 'cohere', 'ollama'];
     const providerMap = {
-      GROQ_API_KEY: 'groq',
-      OPENAI_API_KEY: 'openai',
+      GROQ_API_KEY:      'groq',
+      OPENAI_API_KEY:    'openai',
       ANTHROPIC_API_KEY: 'anthropic',
-      GOOGLE_API_KEY: 'google',
-      MISTRAL_API_KEY: 'mistral',
+      GOOGLE_API_KEY:    'google',
+      MISTRAL_API_KEY:   'mistral',
     };
     const resolvedProvider = provider || providerMap[secretName] || 'openai';
+    if (!VALID_PROVIDERS.includes(resolvedProvider)) {
+      return Response.json({ error: `Provedor "${resolvedProvider}" não é válido.` }, { status: 400 });
+    }
 
     // Check if user already has a config for this secret/provider
     const existing = await base44.entities.UserLLMConfig.filter({

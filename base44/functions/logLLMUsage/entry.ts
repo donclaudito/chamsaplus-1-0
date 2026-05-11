@@ -6,15 +6,29 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { model_id, model_label, input_tokens, output_tokens, session_id } = await req.json();
+    const body = await req.json();
+    const { model_id, model_label, session_id } = body;
+    const input_tokens = Number(body.input_tokens) || 0;
+    const output_tokens = Number(body.output_tokens) || 0;
 
-    const rates = {
-      'claude_sonnet_4_6': { input: 0.003, output: 0.015 },
-      'llama-3.3-70b-versatile': { input: 0.0001, output: 0.0001 },
-      'gpt_5_mini': { input: 0.00015, output: 0.0006 },
+    if (!model_id || typeof model_id !== 'string') {
+      return Response.json({ error: 'model_id é obrigatório' }, { status: 400 });
+    }
+
+    // Rates por modelo — pode ser sobrescrito via env PRICING_JSON no futuro
+    const DEFAULT_RATES = {
+      'claude_sonnet_4_6':      { input: 0.003,   output: 0.015 },
+      'llama-3.3-70b-versatile':{ input: 0.0001,  output: 0.0001 },
+      'gpt_5_mini':             { input: 0.00015, output: 0.0006 },
     };
-    const r = rates[model_id] || { input: 0.001, output: 0.002 };
-    const estimated_cost_usd = (input_tokens / 1000) * r.input + (output_tokens / 1000) * r.output;
+    const pricingEnv = Deno.env.get('PRICING_JSON');
+    const rates = pricingEnv ? { ...DEFAULT_RATES, ...JSON.parse(pricingEnv) } : DEFAULT_RATES;
+
+    const estimateCost = (modelId, inTok, outTok) => {
+      const r = rates[modelId] || { input: 0.001, output: 0.002 };
+      return (inTok / 1000) * r.input + (outTok / 1000) * r.output;
+    };
+    const estimated_cost_usd = estimateCost(model_id, input_tokens, output_tokens);
 
     const now = new Date();
     await base44.entities.LLMUsageLog.create({

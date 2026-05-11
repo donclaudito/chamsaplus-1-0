@@ -9,48 +9,40 @@ Deno.serve(async (req) => {
     const { folder_id } = await req.json();
     if (!folder_id) return Response.json({ error: 'folder_id required' }, { status: 400 });
 
+    // Validar formato básico do folder_id (somente alfanuméricos, hífens e underscores)
+    if (!/^[\w\-]+$/.test(folder_id)) {
+      return Response.json({ error: 'folder_id inválido' }, { status: 400 });
+    }
+
+    // Buscar token uma única vez
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googledrive');
     const headers = { Authorization: `Bearer ${accessToken}` };
 
-    // List files in folder (docs, text, pdf)
-    const listUrl = `https://www.googleapis.com/drive/v3/files?q='${folder_id}'+in+parents+and+trashed=false&fields=files(id,name,mimeType)&pageSize=20`;
+    // Escapar folder_id para uso seguro na query
+    const safeFolderId = folder_id.replace(/'/g, "\\'");
+    const listUrl = `https://www.googleapis.com/drive/v3/files?q='${safeFolderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType)&pageSize=20`;
     const listRes = await fetch(listUrl, { headers });
     const listData = await listRes.json();
-    const files = listData.files || [];
+    const files = (listData.files || []).filter(f =>
+      f.mimeType === 'application/vnd.google-apps.document' ||
+      f.mimeType === 'text/plain' ||
+      f.mimeType === 'text/markdown' ||
+      f.mimeType === 'text/csv'
+    );
 
-    const results = [];
-
-    for (const file of files) {
-      let content = '';
-
+    // Paralelizar download dos arquivos suportados
+    const results = (await Promise.all(files.map(async (file) => {
+      let url;
       if (file.mimeType === 'application/vnd.google-apps.document') {
-        // Export Google Doc as plain text
-        const exportRes = await fetch(
-          `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain`,
-          { headers }
-        );
-        content = await exportRes.text();
-      } else if (
-        file.mimeType === 'text/plain' ||
-        file.mimeType === 'text/markdown' ||
-        file.mimeType === 'text/csv'
-      ) {
-        const dlRes = await fetch(
-          `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
-          { headers }
-        );
-        content = await dlRes.text();
+        url = `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain`;
       } else {
-        // Skip binary/unsupported files
-        continue;
+        url = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
       }
-
-      // Truncate to avoid huge prompts (max 4000 chars per file)
-      results.push({
-        name: file.name,
-        content: content.slice(0, 4000),
-      });
-    }
+      const res = await fetch(url, { headers });
+      if (!res.ok) return null;
+      const content = await res.text();
+      return { name: file.name, content: content.slice(0, 4000) };
+    }))).filter(Boolean);
 
     return Response.json({ files: results });
   } catch (error) {
