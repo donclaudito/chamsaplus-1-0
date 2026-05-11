@@ -103,8 +103,9 @@ export default function FolderSidebar({ folders, selectedFolderId, onSelect, onC
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); }}
-                className="absolute right-1 opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/10 rounded transition-all"
+                className="absolute right-1 opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 hover:bg-destructive/10 rounded transition-all"
                 title="Excluir pasta"
+                aria-label={`Excluir pasta ${folder.name}`}
               >
                 <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
               </button>
@@ -141,6 +142,8 @@ export default function FolderSidebar({ folders, selectedFolderId, onSelect, onC
                 <button
                   key={c.id}
                   onClick={() => setNewColor(c.id)}
+                  aria-pressed={newColor === c.id}
+                  aria-label={`Cor ${c.id}`}
                   className={cn(
                     'w-7 h-7 rounded-full border-2 transition-all',
                     c.bg,

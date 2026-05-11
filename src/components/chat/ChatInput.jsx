@@ -9,9 +9,16 @@ export default function ChatInput({ onSend, onPaste, onTool, onUpload, isLoading
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  const MAX_FILE_SIZE_MB = 20;
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
-    if (file && onUpload) onUpload(file);
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      alert(`Arquivo muito grande. Limite: ${MAX_FILE_SIZE_MB}MB.`);
+      e.target.value = '';
+      return;
+    }
+    if (onUpload) onUpload(file);
     e.target.value = '';
   };
 
@@ -83,6 +90,7 @@ export default function ChatInput({ onSend, onPaste, onTool, onUpload, isLoading
             onClick={onPaste}
             className="p-2.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all shrink-0 touch-manipulation active:bg-primary/10"
             title="Injetar dados clínicos"
+            aria-label="Injetar dados clínicos"
           >
             <ClipboardPaste className="w-4 h-4" />
           </button>
@@ -92,6 +100,7 @@ export default function ChatInput({ onSend, onPaste, onTool, onUpload, isLoading
             onClick={() => fileInputRef.current?.click()}
             className="p-2.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all shrink-0 touch-manipulation active:bg-primary/10"
             title="Enviar documento (PDF, DOCX, TXT)"
+            aria-label="Enviar documento"
           >
             <Paperclip className="w-4 h-4" />
           </button>
@@ -105,6 +114,8 @@ export default function ChatInput({ onSend, onPaste, onTool, onUpload, isLoading
                 : 'text-muted-foreground hover:text-primary hover:bg-primary/10 active:bg-primary/10'
             }`}
             title={canvasMode ? 'Desativar Canvas' : 'Ativar Canvas — painel lateral para documentos longos'}
+            aria-label={canvasMode ? 'Desativar Canvas' : 'Ativar Canvas'}
+            aria-pressed={canvasMode}
           >
             <LayoutPanelLeft className="w-4 h-4" />
           </button>

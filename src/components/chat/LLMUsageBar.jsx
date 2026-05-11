@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MODELS } from '@/lib/modelRouter';
 
 const COST_PER_1K = {
@@ -13,18 +13,21 @@ function estimateCost(modelId, inputTokens, outputTokens) {
 }
 
 export default function LLMUsageBar({ usageLog }) {
+  const { totalCost, totalTokens, byModel } = useMemo(() => {
+    let cost = 0, tokens = 0;
+    const models = {};
+    for (const entry of usageLog) {
+      cost += estimateCost(entry.modelId, entry.inputTokens, entry.outputTokens);
+      tokens += entry.inputTokens + entry.outputTokens;
+      if (!models[entry.modelId]) models[entry.modelId] = { inputTokens: 0, outputTokens: 0, count: 0 };
+      models[entry.modelId].inputTokens += entry.inputTokens;
+      models[entry.modelId].outputTokens += entry.outputTokens;
+      models[entry.modelId].count += 1;
+    }
+    return { totalCost: cost, totalTokens: tokens, byModel: models };
+  }, [usageLog]);
+
   if (!usageLog || usageLog.length === 0) return null;
-
-  const totalCost = usageLog.reduce((sum, entry) => sum + estimateCost(entry.modelId, entry.inputTokens, entry.outputTokens), 0);
-  const totalTokens = usageLog.reduce((sum, e) => sum + e.inputTokens + e.outputTokens, 0);
-
-  // Group by model
-  const byModel = {};
-  usageLog.forEach(entry => {
-    if (!byModel[entry.modelId]) byModel[entry.modelId] = { inputTokens: 0, outputTokens: 0 };
-    byModel[entry.modelId].inputTokens += entry.inputTokens;
-    byModel[entry.modelId].outputTokens += entry.outputTokens;
-  });
 
   const barColor = totalCost < 0.01 ? 'bg-emerald-500' : totalCost < 0.05 ? 'bg-amber-500' : 'bg-red-500';
   const barWidth = Math.min(100, (totalCost / 0.1) * 100);
@@ -42,7 +45,7 @@ export default function LLMUsageBar({ usageLog }) {
           if (!meta) return null;
           return (
             <span key={modelId} className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${meta.bg} ${meta.color}`}>
-              {meta.label} ×{usageLog.filter(e => e.modelId === modelId).length}
+              {meta.label} ×{usage.count}
             </span>
           );
         })}

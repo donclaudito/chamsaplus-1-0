@@ -16,6 +16,11 @@ export default function MoveToFolderMenu({ folders, onMove, children }) {
           <span className="mr-2">📂</span> Sem pasta
         </DropdownMenuItem>
         {folders.length > 0 && <DropdownMenuSeparator />}
+        {folders.length === 0 && (
+          <DropdownMenuItem disabled className="text-muted-foreground text-xs">
+            Nenhuma pasta criada
+          </DropdownMenuItem>
+        )}
         {folders.map(f => (
           <DropdownMenuItem key={f.id} onClick={() => onMove(f.id)}>
             <span className="mr-2">{f.icon || '📁'}</span>

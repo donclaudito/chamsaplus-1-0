@@ -159,6 +159,8 @@ export default function CanvasPanel({ content, title, onClose }) {
       onClick={onClick}
       disabled={disabled}
       title={t}
+      aria-label={t}
+      aria-pressed={active !== undefined ? active : undefined}
       className={`p-1.5 rounded-md transition-all disabled:opacity-30 shrink-0
         ${active
           ? 'bg-primary/15 text-primary'

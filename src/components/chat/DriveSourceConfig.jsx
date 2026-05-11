@@ -8,8 +8,13 @@ export default function DriveSourceConfig({ folderId, onSave }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(folderId || DEFAULT_DRIVE_FOLDER_ID);
 
+  // Drive folder IDs são strings alfanuméricas com hífens e underscores
+  const isValidFolderId = (id) => /^[\w\-]{10,}$/.test(id);
+
   const handleSave = () => {
-    onSave(value.trim());
+    const trimmed = value.trim();
+    if (!isValidFolderId(trimmed)) return;
+    onSave(trimmed);
     setEditing(false);
   };
 
@@ -34,9 +39,17 @@ export default function DriveSourceConfig({ folderId, onSave }) {
           onChange={e => setValue(e.target.value)}
           placeholder="ID da pasta do Drive..."
           className="h-7 text-xs w-52"
+          aria-label="ID da pasta do Google Drive"
           autoFocus
         />
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSave}>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7"
+          onClick={handleSave}
+          disabled={!isValidFolderId(value.trim())}
+          aria-label="Salvar ID da pasta"
+        >
           <Check className="w-3.5 h-3.5 text-emerald-500" />
         </Button>
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditing(false); setValue(folderId || ''); }}>
