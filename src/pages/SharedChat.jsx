@@ -11,6 +11,8 @@ export default function SharedChat() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const PAGE_SIZE = 20;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -45,7 +47,8 @@ export default function SharedChat() {
     </div>
   );
 
-  const visibleMessages = (session.messages || []).filter(m => m.role === 'user' || m.role === 'assistant');
+  const allMessages = (session.messages || []).filter(m => m.role === 'user' || m.role === 'assistant');
+  const visibleMessages = allMessages.slice(-visibleCount);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -78,6 +81,16 @@ export default function SharedChat() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-3xl mx-auto space-y-4">
+          {visibleCount < allMessages.length && (
+            <div className="text-center">
+              <button
+                onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+                className="text-xs text-primary hover:underline py-1"
+              >
+                Carregar mensagens anteriores ({allMessages.length - visibleCount} restantes)
+              </button>
+            </div>
+          )}
           {visibleMessages.map((msg, i) => {
             const isAssistant = msg.role === 'assistant';
             return (

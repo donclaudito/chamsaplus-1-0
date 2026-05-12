@@ -2,31 +2,27 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AppLayout from '@/components/layout/AppLayout';
-import Chat from '@/pages/Chat';
-import Biblioteca from '@/pages/Biblioteca';
-import Laboratorio from '@/pages/Laboratorio';
-import SharedChat from '@/pages/SharedChat';
-import Integracoes from '@/pages/Integracoes';
-import ChamsaOverview from '@/pages/ChamsaOverview';
-import PendingApproval from '@/pages/PendingApproval';
-import PendingEmailVerification from '@/pages/PendingEmailVerification';
-import AdminUsers from '@/pages/AdminUsers';
+import AppLoader from '@/components/layout/AppLoader';
+
+const Chat                  = lazy(() => import('@/pages/Chat'));
+const Biblioteca            = lazy(() => import('@/pages/Biblioteca'));
+const Laboratorio           = lazy(() => import('@/pages/Laboratorio'));
+const SharedChat            = lazy(() => import('@/pages/SharedChat'));
+const Integracoes           = lazy(() => import('@/pages/Integracoes'));
+const ChamsaOverview        = lazy(() => import('@/pages/ChamsaOverview'));
+const PendingApproval       = lazy(() => import('@/pages/PendingApproval'));
+const PendingEmailVerification = lazy(() => import('@/pages/PendingEmailVerification'));
+const AdminUsers            = lazy(() => import('@/pages/AdminUsers'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user, isAuthenticated } = useAuth();
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  if (isLoadingPublicSettings || isLoadingAuth) return <AppLoader />;
 
   // Handle authentication errors
   if (authError) {
@@ -61,8 +57,8 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Render the main app
   return (
+    <Suspense fallback={<AppLoader />}>
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Chat />} />
@@ -77,6 +73,7 @@ const AuthenticatedApp = () => {
       <Route path="/share/:shareId" element={<SharedChat />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </Suspense>
   );
 };
 

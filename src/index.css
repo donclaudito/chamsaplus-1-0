@@ -120,29 +120,35 @@
   margin-top: 1em;
   margin-bottom: 0.5em;
 }
-.chamsa-prose h1 { font-size: 1.25rem; }
-.chamsa-prose h2 { font-size: 1.125rem; }
-.chamsa-prose h3 { font-size: 1rem; }
-.chamsa-prose p { margin-bottom: 0.75em; line-height: 1.7; }
-.chamsa-prose ul, .chamsa-prose ol { margin-left: 1.5em; margin-bottom: 0.75em; }
-.chamsa-prose li { margin-bottom: 0.25em; }
+.chamsa-prose h1 { font-size: 1.125rem; }
+.chamsa-prose h2 { font-size: 1rem; }
+.chamsa-prose h3 { font-size: 0.9375rem; }
+.chamsa-prose p { margin-bottom: 0.75em; line-height: 1.7; font-size: 0.875rem; }
+.chamsa-prose ul, .chamsa-prose ol { margin-left: 1.25em; margin-bottom: 0.75em; }
+.chamsa-prose li { margin-bottom: 0.25em; font-size: 0.875rem; }
 .chamsa-prose code {
   font-family: var(--font-mono);
-  font-size: 0.85em;
+  font-size: 0.8em;
   padding: 0.15em 0.4em;
   border-radius: 4px;
   background: hsl(var(--muted));
 }
 .chamsa-prose pre {
   font-family: var(--font-mono);
-  font-size: 0.85em;
-  padding: 1em;
+  font-size: 0.8em;
+  padding: 0.875em;
   border-radius: 8px;
   background: hsl(var(--muted));
   overflow-x: auto;
   margin-bottom: 0.75em;
 }
 .chamsa-prose strong { font-weight: 700; }
+@media (min-width: 640px) {
+  .chamsa-prose h1 { font-size: 1.25rem; }
+  .chamsa-prose h2 { font-size: 1.125rem; }
+  .chamsa-prose h3 { font-size: 1rem; }
+  .chamsa-prose p, .chamsa-prose li { font-size: 0.9375rem; }
+}
 .chamsa-prose .table-wrapper {
   width: 100%;
   overflow-x: auto;
