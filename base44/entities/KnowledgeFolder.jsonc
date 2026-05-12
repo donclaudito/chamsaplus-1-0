@@ -47,7 +47,7 @@
   "rls": {
     "create": {
       "user_condition": {
-        "isAuthenticated": true
+        "role": "user"
       }
     },
     "read": {
