@@ -2,64 +2,58 @@ const isNode = typeof window === 'undefined';
 const windowObj = isNode ? { localStorage: new Map() } : window;
 const storage = windowObj.localStorage;
 
-const toSnakeCase = (str) => {
-	return str.replace(/([A-Z])/g, '_$1').toLowerCase();
-}
+// Centraliza todas as chaves de token para garantir limpeza consistente
+const TOKEN_KEYS = ['base44_access_token', 'base44_token', 'token'];
 
-const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl = false } = {}) => {
-	if (isNode) {
-		return defaultValue;
-	}
+const toSnakeCase = (str) => str.replace(/([A-Z])/g, '_$1').toLowerCase();
+
+// Recebe urlParams já instanciado para evitar duplicação de URLSearchParams
+const getAppParamValue = (paramName, urlParams, { defaultValue = undefined, removeFromUrl = false } = {}) => {
+	if (isNode) return defaultValue;
+
 	const storageKey = `base44_${toSnakeCase(paramName)}`;
-	const urlParams = new URLSearchParams(window.location.search);
 	const searchParam = urlParams.get(paramName);
-	if (removeFromUrl) {
+
+	if (removeFromUrl && searchParam) {
 		urlParams.delete(paramName);
-		const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ""
-			}${window.location.hash}`;
+		const qs = urlParams.toString();
+		const newUrl = `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`;
 		window.history.replaceState({}, document.title, newUrl);
 	}
+
 	if (searchParam) {
 		storage.setItem(storageKey, searchParam);
 		return searchParam;
 	}
-	if (defaultValue) {
+	if (defaultValue !== undefined) {
 		storage.setItem(storageKey, defaultValue);
 		return defaultValue;
 	}
-	const storedValue = storage.getItem(storageKey);
-	if (storedValue) {
-		return storedValue;
-	}
-	return null;
-}
+	return storage.getItem(storageKey) || null;
+};
 
 const getAppParams = () => {
-	if (getAppParamValue("clear_access_token") === 'true') {
-		storage.removeItem('base44_access_token');
-		storage.removeItem('token');
+	// URLSearchParams instanciado uma única vez e reutilizado em todas as chamadas
+	const urlParams = new URLSearchParams(
+		typeof window !== 'undefined' ? window.location.search : ''
+	);
+
+	if (getAppParamValue("clear_access_token", urlParams) === 'true') {
+		TOKEN_KEYS.forEach(k => storage.removeItem(k));
 	}
 
-	// If there's a fresh access_token in the URL (e.g. from an invite link),
-	// clear any existing session first so the new token takes effect cleanly.
-	const urlParams = new URLSearchParams(window.location.search);
-	const incomingToken = urlParams.get("access_token");
-	if (incomingToken) {
-		storage.removeItem('base44_access_token');
-		storage.removeItem('base44_token');
-		storage.removeItem('token');
+	// Se há um token novo na URL (ex: invite link), limpa sessão anterior
+	if (urlParams.get("access_token")) {
+		TOKEN_KEYS.forEach(k => storage.removeItem(k));
 	}
 
 	return {
-		appId: getAppParamValue("app_id", { defaultValue: import.meta.env.VITE_BASE44_APP_ID }),
-		token: getAppParamValue("access_token", { removeFromUrl: true }),
-		fromUrl: getAppParamValue("from_url", { defaultValue: window.location.href }),
-		functionsVersion: getAppParamValue("functions_version", { defaultValue: import.meta.env.VITE_BASE44_FUNCTIONS_VERSION }),
-		appBaseUrl: getAppParamValue("app_base_url", { defaultValue: import.meta.env.VITE_BASE44_APP_BASE_URL }),
-	}
-}
+		appId:            getAppParamValue("app_id",            urlParams, { defaultValue: import.meta.env.VITE_BASE44_APP_ID ?? '' }),
+		token:            getAppParamValue("access_token",      urlParams, { removeFromUrl: true }),
+		fromUrl:          getAppParamValue("from_url",          urlParams, { defaultValue: typeof window !== 'undefined' ? window.location.href : '' }),
+		functionsVersion: getAppParamValue("functions_version", urlParams, { defaultValue: import.meta.env.VITE_BASE44_FUNCTIONS_VERSION ?? '' }),
+		appBaseUrl:       getAppParamValue("app_base_url",      urlParams, { defaultValue: import.meta.env.VITE_BASE44_APP_BASE_URL ?? '' }),
+	};
+};
 
-
-export const appParams = {
-	...getAppParams()
-}
+export const appParams = { ...getAppParams() };

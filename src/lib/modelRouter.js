@@ -64,22 +64,20 @@ export function detectModel(text, hasDataBlocks = false, hasVectorContext = fals
   if (hasDataBlocks) return 'claude_sonnet_4_6';
 
   const lower = text.toLowerCase();
+  const hasDeepKw = DEEP_KEYWORDS.some(kw => lower.includes(kw));
+  const hasMidKw  = MID_KEYWORDS.some(kw => lower.includes(kw));
 
-  // Fast tier: short queries with no clinical keywords
-  const isTrivial = text.length < 80 &&
-    !DEEP_KEYWORDS.some(kw => lower.includes(kw)) &&
-    !MID_KEYWORDS.some(kw => lower.includes(kw));
-  if (isTrivial) return 'gpt_5_mini';
+  // Deep tier: clinical complexity OR long text — highest priority after data blocks
+  if (hasDeepKw || text.length > 400) return 'claude_sonnet_4_6';
 
-  // Deep tier: clinical complexity OR long text
-  const isDeep = DEEP_KEYWORDS.some(kw => lower.includes(kw)) || text.length > 400;
-  if (isDeep) return 'claude_sonnet_4_6';
+  // Balanced: RAG vector context is prioritized here, before mid keywords / length
+  // so that context-augmented queries always go through Llama
+  if (hasVectorContext) return 'llama-3.3-70b-versatile';
 
-  // Balanced: RAG context available → Llama handles well with retrieved context
-  // Mid keywords or moderate length
-  const isMid = MID_KEYWORDS.some(kw => lower.includes(kw)) || text.length > 150 || hasVectorContext;
-  if (isMid) return 'llama-3.3-70b-versatile';
+  // Balanced: mid-complexity keywords or moderate length
+  if (hasMidKw || text.length > 150) return 'llama-3.3-70b-versatile';
 
+  // Fast tier: short queries with no clinical keywords (trivial / greetings)
   return 'gpt_5_mini';
 }
 

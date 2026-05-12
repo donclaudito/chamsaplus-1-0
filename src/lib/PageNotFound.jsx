@@ -1,11 +1,12 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 
 
 export default function PageNotFound({}) {
     const location = useLocation();
-    const pageName = location.pathname.substring(1);
+    const navigate = useNavigate();
+    const pageName = location.pathname.substring(1) || 'Unknown Page';
 
     const { data: authData, isFetched } = useQuery({
         queryKey: ['user'],
@@ -59,7 +60,7 @@ export default function PageNotFound({}) {
                     {/* Action Buttons */}
                     <div className="pt-6 flex items-center justify-center gap-3 flex-wrap">
                         <button 
-                            onClick={() => window.location.href = '/'} 
+                            onClick={() => navigate('/')} 
                             className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                         >
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

@@ -7,3 +7,6 @@
 // ID da pasta padrão do Google Drive usada como fonte RAG.
 // Pode ser sobrescrito pelo usuário via DriveSourceConfig e persistido no localStorage.
 export const DEFAULT_DRIVE_FOLDER_ID = '1eWosMBtk9N5tICSKLETbeECw9qlSpZed';
+
+// SSR-safe: garante que `window` existe antes de acessar propriedades do browser
+export const isIframe = typeof window !== 'undefined' && window.self !== window.top;
