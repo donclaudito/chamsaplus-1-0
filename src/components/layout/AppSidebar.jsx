@@ -271,8 +271,12 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
       `}>
         {/* Header */}
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-          <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
-            <BrainCircuit className="w-4 h-4 text-primary" />
+          <div className="flex items-center gap-2">
+            <img
+              src="https://media.base44.com/images/public/69fca602fc26c81e3e0767df/2215309d9_orengostei.png"
+              alt="Logo"
+              className="w-8 h-8 object-contain"
+            />
           </div>
           <button onClick={onClose} className="lg:hidden p-1 hover:bg-slate-200 rounded-lg">
             <X className="w-4 h-4 text-slate-600" />
