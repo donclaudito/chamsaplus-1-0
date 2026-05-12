@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AppLayout from '@/components/layout/AppLayout';
 import AppLoader from '@/components/layout/AppLoader';
+import { MedicalDataProvider } from '@/contexts/MedicalDataContext';
 
 const Chat                  = lazy(() => import('@/pages/Chat'));
 const Biblioteca            = lazy(() => import('@/pages/Biblioteca'));
@@ -83,9 +84,11 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
+        <MedicalDataProvider>
+          <Router>
+            <AuthenticatedApp />
+          </Router>
+        </MedicalDataProvider>
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>
