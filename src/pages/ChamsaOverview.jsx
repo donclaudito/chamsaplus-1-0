@@ -81,7 +81,10 @@ export default function ChamsaOverview() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    base44.auth.me().then(u => { setUser(u); setLoading(false); }).catch(() => setLoading(false));
+    base44.auth.me()
+      .then(u => setUser(u))
+      .catch(err => console.error('Auth check failed:', err))
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
@@ -103,12 +106,12 @@ export default function ChamsaOverview() {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-y-auto h-screen">
+    <div className="min-h-screen bg-background overflow-y-auto">
       {/* Hero */}
       <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 text-white px-6 py-16 text-center">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="w-16 h-16 rounded-2xl bg-white/15 flex items-center justify-center mx-auto mb-4">
-            <BrainCircuit className="w-9 h-9 text-white" />
+            <BrainCircuit className="w-9 h-9 text-white" aria-hidden="true" />
           </div>
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-3 py-1 text-xs font-semibold mb-4">
             <Star className="w-3 h-3 text-yellow-300" /> Visão Geral — Admin Only

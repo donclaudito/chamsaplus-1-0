@@ -1,13 +1,16 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { CheckCircle2, XCircle, Clock, Users, ShieldCheck } from 'lucide-react';
+import { Clock, Users, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import UserRow from '@/components/admin/UserRow';
 
 export default function AdminUsers() {
   const qc = useQueryClient();
+  const { toast } = useToast();
 
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['allUsers'],
     queryFn: () => base44.entities.User.list('-created_date', 100),
   });
@@ -15,19 +18,27 @@ export default function AdminUsers() {
   const approveMutation = useMutation({
     mutationFn: ({ userId, approved }) =>
       base44.functions.invoke('approveUser', { userId, approved }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['allUsers'] }),
+    onSuccess: (_, { approved }) => {
+      qc.invalidateQueries({ queryKey: ['allUsers'] });
+      toast({ title: approved ? 'Usuário aprovado' : 'Acesso revogado' });
+    },
+    onError: () => toast({ title: 'Erro ao atualizar usuário', variant: 'destructive' }),
   });
 
-  const pending = users.filter(u => !u.is_approved);
-  const approved = users.filter(u => u.is_approved);
+  const pending  = users.filter(u => !u.is_approved);
+  const approved = users.filter(u =>  u.is_approved);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  if (isError) return (
+    <div className="flex items-center justify-center h-64">
+      <p className="text-sm text-destructive">Erro ao carregar usuários. Tente recarregar a página.</p>
+    </div>
+  );
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-8">
@@ -77,41 +88,6 @@ export default function AdminUsers() {
           ))}
         </div>
       </section>
-    </div>
-  );
-}
-
-function UserRow({ user, onApprove, onRevoke, isPending, isApproved }) {
-  return (
-    <div className={`flex items-center gap-3 p-3 rounded-xl border ${isApproved ? 'border-border bg-card' : 'border-amber-200 bg-amber-50'}`}>
-      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
-        {(user.full_name || user.email || '?')[0].toUpperCase()}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate">{user.full_name || '—'}</p>
-        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-      </div>
-      <div className="flex items-center gap-1.5 shrink-0">
-        {isApproved ? (
-          <>
-            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-              <CheckCircle2 className="w-3 h-3" /> Aprovado
-            </span>
-            <Button size="sm" variant="outline" onClick={onRevoke} disabled={isPending} className="h-7 text-xs">
-              Revogar
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button size="sm" onClick={onApprove} disabled={isPending} className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700">
-              <CheckCircle2 className="w-3 h-3" /> Aprovar
-            </Button>
-            <Button size="sm" variant="outline" onClick={onRevoke} disabled={isPending} className="h-7 text-xs text-destructive hover:text-destructive">
-              <XCircle className="w-3 h-3" />
-            </Button>
-          </>
-        )}
-      </div>
     </div>
   );
 }

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Plug, Info } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import IntegrationCard from '@/components/integracoes/IntegrationCard';
 import AddIntegrationModal from '@/components/integracoes/AddIntegrationModal';
@@ -97,7 +99,9 @@ export default function Integracoes() {
   const [modalOpen, setModalOpen] = useState(false);
   const [llmFormOpen, setLlmFormOpen] = useState(false);
   const [configuredSecrets, setConfiguredSecrets] = useState([]);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   useEffect(() => {
     base44.functions.invoke('listSecrets', {})
@@ -107,7 +111,7 @@ export default function Integracoes() {
           .map(s => s.name);
         setConfiguredSecrets(configured);
       })
-      .catch(() => {});
+      .catch(() => toast({ title: 'Não foi possível carregar o status dos secrets', variant: 'destructive' }));
   }, []);
 
   const { data: customProviders = [] } = useQuery({
@@ -117,24 +121,31 @@ export default function Integracoes() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.CustomIntegration.create(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customIntegrations'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customIntegrations'] });
+      toast({ title: 'Integração adicionada' });
+    },
+    onError: () => toast({ title: 'Erro ao adicionar integração', variant: 'destructive' }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.CustomIntegration.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customIntegrations'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customIntegrations'] });
+      toast({ title: 'Integração removida' });
+    },
+    onError: () => toast({ title: 'Erro ao remover integração', variant: 'destructive' }),
   });
 
   const handleAddCustom = (provider) => {
     const { id: _id, isCustom: _ic, ...data } = provider;
-    // Serializar exampleJson como string se for objeto
     if (data.exampleJson && typeof data.exampleJson === 'object') {
       data.exampleJson = JSON.stringify(data.exampleJson);
     }
     createMutation.mutate(data);
   };
 
-  const handleRemoveCustom = (id) => deleteMutation.mutate(id);
+  const handleRemoveCustom = (id) => setConfirmDeleteId(id);
 
   const allProviders = [...BUILT_IN_PROVIDERS, ...customProviders];
 
@@ -176,7 +187,7 @@ export default function Integracoes() {
             </span>
           ))}
           <span className="text-[10px] text-muted-foreground">
-            {allProviders.length - configuredSecrets.length} sem configuração
+            {configuredSecrets.length} configurada{configuredSecrets.length !== 1 ? 's' : ''}, {BUILT_IN_PROVIDERS.length - configuredSecrets.filter(s => BUILT_IN_PROVIDERS.some(p => p.secretName === s)).length} não configuradas de {BUILT_IN_PROVIDERS.length} padrão
           </span>
         </div>
 
@@ -229,6 +240,20 @@ export default function Integracoes() {
         </div>
 
       </div>
+
+      {/* Confirm delete */}
+      <Dialog open={!!confirmDeleteId} onOpenChange={() => setConfirmDeleteId(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Remover integração?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Esta ação não pode ser desfeita.</p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null); }}>
+              Remover
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AddIntegrationModal
         open={modalOpen}

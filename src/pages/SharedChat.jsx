@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { BrainCircuit, Bot, User, AlertCircle, Loader2 } from 'lucide-react';
+import { BrainCircuit, Bot, User, AlertCircle, Loader2, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { base44 } from '@/api/base44Client';
 
@@ -10,6 +10,14 @@ export default function SharedChat() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   useEffect(() => {
     if (!shareId) { setError('Link inválido.'); setLoading(false); return; }
@@ -43,13 +51,28 @@ export default function SharedChat() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <div className="border-b border-border bg-card/80 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-          <BrainCircuit className="w-4 h-4 text-primary" />
+        <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <BrainCircuit className="w-4 h-4 text-primary" aria-hidden="true" />
         </div>
-        <div>
-          <h1 className="text-sm font-semibold text-foreground">{session.title}</h1>
-          <p className="text-[10px] text-muted-foreground">Chamsa Isa v4.1 · Conversa compartilhada</p>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-sm font-semibold text-foreground truncate">{session.title}</h1>
+          <p className="text-[10px] text-muted-foreground">
+            Chamsa Isa v4.1 · Conversa compartilhada
+            {session.created_date && (
+              <> · {new Date(session.created_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</>
+            )}
+          </p>
         </div>
+        <button
+          onClick={handleCopyLink}
+          className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors shrink-0"
+          aria-label="Copiar link de compartilhamento"
+        >
+          {copied
+            ? <><Check className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" /><span className="text-emerald-600">Copiado!</span></>
+            : <><Copy className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" /><span className="text-muted-foreground">Copiar link</span></>
+          }
+        </button>
       </div>
 
       {/* Messages */}
@@ -75,9 +98,11 @@ export default function SharedChat() {
                   ) : (
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                   )}
-                  <span className="text-[10px] text-muted-foreground/50 mt-1 block">
-                    {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}
-                  </span>
+                  {msg.timestamp && (
+                    <span className="text-[10px] text-muted-foreground/50 mt-1 block">
+                      {new Date(msg.timestamp).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
                 </div>
                 {!isAssistant && (
                   <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center shrink-0 mt-1">

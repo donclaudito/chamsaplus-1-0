@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { FolderSearch, Upload, FileText, Trash2, Search, Plus, BrainCircuit, FolderInput, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,10 +28,13 @@ export default function Biblioteca() {
   const [showAdd, setShowAdd]           = useState(false);
   const [newDoc, setNewDoc]             = useState({ title: '', content: '', category: 'outro', folder_id: null });
   const [isUploading, setIsUploading]   = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null); // doc id pending delete
+  const [confirmFolderId, setConfirmFolderId] = useState(null); // folder id pending delete
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [sidebarOpen, setSidebarOpen]   = useState(true);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const { data: documents = [], isLoading: docsLoading } = useQuery({
     queryKey: ['knowledge', user?.email],
@@ -53,21 +57,28 @@ export default function Biblioteca() {
       setShowAdd(false);
       setNewDoc({ title: '', content: '', category: 'outro', folder_id: null });
     },
+    onError: () => toast({ title: 'Erro ao criar documento', variant: 'destructive' }),
   });
 
   const deleteDocMutation = useMutation({
     mutationFn: (id) => base44.entities.Knowledge.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+      toast({ title: 'Documento removido' });
+    },
+    onError: () => toast({ title: 'Erro ao remover documento', variant: 'destructive' }),
   });
 
   const updateDocMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Knowledge.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge'] }),
+    onError: () => toast({ title: 'Erro ao mover documento', variant: 'destructive' }),
   });
 
   const createFolderMutation = useMutation({
     mutationFn: (data) => base44.entities.KnowledgeFolder.create(data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledgeFolders'] }),
+    onError: () => toast({ title: 'Erro ao criar pasta', variant: 'destructive' }),
   });
 
   const deleteFolderMutation = useMutation({
@@ -80,24 +91,31 @@ export default function Biblioteca() {
       queryClient.invalidateQueries({ queryKey: ['knowledgeFolders'] });
       queryClient.invalidateQueries({ queryKey: ['knowledge'] });
       setSelectedFolder(null);
+      toast({ title: 'Pasta removida' });
     },
+    onError: () => toast({ title: 'Erro ao remover pasta', variant: 'destructive' }),
   });
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.Knowledge.create({
-      title: file.name,
-      file_url,
-      file_type: file.name.split('.').pop(),
-      category: 'outro',
-      folder_id: selectedFolder && selectedFolder !== '__none__' ? selectedFolder : null,
-    });
-    queryClient.invalidateQueries({ queryKey: ['knowledge'] });
-    setIsUploading(false);
-    e.target.value = '';
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.entities.Knowledge.create({
+        title: file.name,
+        file_url,
+        file_type: file.name.split('.').pop(),
+        category: 'outro',
+        folder_id: selectedFolder && selectedFolder !== '__none__' ? selectedFolder : null,
+      });
+      queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+    } catch {
+      toast({ title: 'Erro ao fazer upload do arquivo', variant: 'destructive' });
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
   };
 
   const docCounts = useMemo(() => {
@@ -136,7 +154,7 @@ export default function Biblioteca() {
                 selectedFolderId={selectedFolder}
                 onSelect={setSelectedFolder}
                 onCreateFolder={(data) => createFolderMutation.mutate(data)}
-                onDeleteFolder={(id) => deleteFolderMutation.mutate(id)}
+                onDeleteFolder={(id) => setConfirmFolderId(id)}
                 docCounts={docCounts}
               />
             </div>
@@ -255,15 +273,16 @@ export default function Biblioteca() {
                               folders={folders}
                               onMove={(folderId) => updateDocMutation.mutate({ id: doc.id, data: { folder_id: folderId } })}
                             >
-                              <button className="p-1.5 hover:bg-muted rounded-lg transition-colors" title="Mover para pasta">
-                                <FolderInput className="w-3.5 h-3.5 text-muted-foreground" />
+                              <button className="p-1.5 hover:bg-muted rounded-lg transition-colors" aria-label={`Mover ${doc.title} para pasta`}>
+                                <FolderInput className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
                               </button>
                             </MoveToFolderMenu>
                             <button
-                              onClick={() => deleteDocMutation.mutate(doc.id)}
+                              onClick={() => setConfirmDeleteId(doc.id)}
                               className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors"
+                              aria-label={`Remover ${doc.title}`}
                             >
-                              <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+                              <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" aria-hidden="true" />
                             </button>
                           </div>
                         </div>
@@ -276,6 +295,34 @@ export default function Biblioteca() {
           )}
         </div>
       </div>
+
+      {/* Confirm delete doc */}
+      <Dialog open={!!confirmDeleteId} onOpenChange={() => setConfirmDeleteId(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Remover documento?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Esta ação não pode ser desfeita.</p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => { deleteDocMutation.mutate(confirmDeleteId); setConfirmDeleteId(null); }}>
+              Remover
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm delete folder */}
+      <Dialog open={!!confirmFolderId} onOpenChange={() => setConfirmFolderId(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Remover pasta?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Os documentos dentro da pasta serão movidos para "Sem pasta".</p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setConfirmFolderId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => { deleteFolderMutation.mutate(confirmFolderId); setConfirmFolderId(null); }}>
+              Remover
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent>
