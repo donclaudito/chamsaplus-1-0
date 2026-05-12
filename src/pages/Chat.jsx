@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -280,10 +281,8 @@ export default function Chat() {
 
   const modelForDisplay = manualModel || activeModel;
 
-  return (
-    <div className="flex h-full overflow-hidden min-h-0">
-      {/* Chat Column — oculta em mobile quando canvas está aberto */}
-      <div className={`flex flex-col min-w-0 transition-all duration-300 ${canvasContent ? 'hidden sm:flex sm:w-[400px] sm:shrink-0 sm:border-r sm:border-border' : 'flex-1'}`}>
+  const chatColumn = (
+    <div className="flex flex-col h-full min-h-0 min-w-0">
         {/* Save status indicator */}
         {(isSaving || saveError) && (
           <div className={`flex items-center justify-center gap-1.5 px-3 py-1 text-[11px] font-medium ${saveError ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}`}>
@@ -377,21 +376,41 @@ export default function Chat() {
           onClose={() => setShowPaste(false)}
           onSubmit={handlePasteData}
         />
-      </div>
+    </div>
+  );
 
-      {/* Canvas Panel — full screen overlay em mobile, coluna lateral em desktop */}
-      {canvasContent && (
-        <div className="
-          absolute inset-0 z-30 flex flex-col overflow-hidden
-          sm:relative sm:inset-auto sm:z-auto sm:flex-1 sm:min-w-0
-        ">
-          <CanvasPanel
-            content={canvasContent}
-            title={canvasTitle}
-            onClose={closeCanvas}
-          />
+  // Mobile: canvas como overlay fullscreen
+  if (canvasContent && typeof window !== 'undefined' && window.innerWidth < 640) {
+    return (
+      <div className="flex h-full overflow-hidden min-h-0 relative">
+        {chatColumn}
+        <div className="absolute inset-0 z-30 flex flex-col overflow-hidden">
+          <CanvasPanel content={canvasContent} title={canvasTitle} onClose={closeCanvas} />
         </div>
-      )}
+      </div>
+    );
+  }
+
+  // Desktop: painéis redimensionáveis
+  if (canvasContent) {
+    return (
+      <PanelGroup direction="horizontal" className="h-full" autoSaveId="chat-canvas-layout">
+        <Panel defaultSize={40} minSize={25} maxSize={65} className="flex flex-col min-h-0">
+          {chatColumn}
+        </Panel>
+        <PanelResizeHandle className="w-1 bg-border hover:bg-primary/40 transition-colors cursor-col-resize" />
+        <Panel defaultSize={60} minSize={30} className="flex flex-col min-h-0 overflow-hidden">
+          <CanvasPanel content={canvasContent} title={canvasTitle} onClose={closeCanvas} />
+        </Panel>
+      </PanelGroup>
+    );
+  }
+
+  return (
+    <div className="flex h-full overflow-hidden min-h-0">
+      <div className="flex flex-col flex-1 min-w-0 min-h-0">
+        {chatColumn}
+      </div>
     </div>
   );
 }
