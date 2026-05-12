@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
+import { cn } from '@/lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { FolderSearch, Upload, FileText, Trash2, Search, Plus, BrainCircuit, FolderInput, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { FolderSearch, Upload, FileText, Trash2, Search, Plus, BrainCircuit, FolderInput, PanelLeftClose, PanelLeftOpen, Pencil, X, Check, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,9 @@ export default function Biblioteca() {
   const [confirmFolderId, setConfirmFolderId] = useState(null); // folder id pending delete
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [sidebarOpen, setSidebarOpen]   = useState(true);
+  const [previewDoc, setPreviewDoc]     = useState(null); // doc para visualizar PDF
+  const [editingTitleId, setEditingTitleId] = useState(null); // id do doc em edição
+  const [editingTitleValue, setEditingTitleValue] = useState('');
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -72,8 +76,14 @@ export default function Biblioteca() {
   const updateDocMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Knowledge.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge'] }),
-    onError: () => toast({ title: 'Erro ao mover documento', variant: 'destructive' }),
+    onError: () => toast({ title: 'Erro ao atualizar documento', variant: 'destructive' }),
   });
+
+  const handleSaveTitle = (id) => {
+    if (!editingTitleValue.trim()) return;
+    updateDocMutation.mutate({ id, data: { title: editingTitleValue.trim() } });
+    setEditingTitleId(null);
+  };
 
   const createFolderMutation = useMutation({
     mutationFn: (data) => base44.entities.KnowledgeFolder.create(data),
@@ -251,12 +261,57 @@ export default function Biblioteca() {
                     >
                       <Card className="p-4 hover:shadow-md transition-all">
                         <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-start gap-3 min-w-0">
-                            <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                              <FileText className="w-4 h-4 text-muted-foreground" />
-                            </div>
-                            <div className="min-w-0">
-                              <h3 className="font-medium text-sm truncate">{doc.title}</h3>
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            {/* Ícone clicável para abrir PDF */}
+                            <button
+                              onClick={() => doc.file_url && setPreviewDoc(doc)}
+                              className={cn(
+                                'w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0 transition-colors',
+                                doc.file_url ? 'hover:bg-primary/10 cursor-pointer' : 'cursor-default'
+                              )}
+                              title={doc.file_url ? 'Visualizar arquivo' : undefined}
+                            >
+                              <FileText className={cn('w-4 h-4', doc.file_url ? 'text-primary' : 'text-muted-foreground')} />
+                            </button>
+                            <div className="min-w-0 flex-1">
+                              {/* Título editável */}
+                              {editingTitleId === doc.id ? (
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    value={editingTitleValue}
+                                    onChange={(e) => setEditingTitleValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleSaveTitle(doc.id);
+                                      if (e.key === 'Escape') setEditingTitleId(null);
+                                    }}
+                                    className="h-6 text-sm py-0 px-1"
+                                    autoFocus
+                                  />
+                                  <button onClick={() => handleSaveTitle(doc.id)} className="p-0.5 text-emerald-500 hover:text-emerald-600">
+                                    <Check className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button onClick={() => setEditingTitleId(null)} className="p-0.5 text-muted-foreground hover:text-foreground">
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 group/title">
+                                  <h3
+                                    className="font-medium text-sm truncate cursor-pointer hover:text-primary"
+                                    onClick={() => doc.file_url && setPreviewDoc(doc)}
+                                    title={doc.file_url ? 'Clique para visualizar' : doc.title}
+                                  >
+                                    {doc.title}
+                                  </h3>
+                                  <button
+                                    onClick={() => { setEditingTitleId(doc.id); setEditingTitleValue(doc.title); }}
+                                    className="opacity-0 group-hover/title:opacity-100 p-0.5 hover:text-primary transition-opacity shrink-0"
+                                    title="Renomear"
+                                  >
+                                    <Pencil className="w-3 h-3 text-muted-foreground" />
+                                  </button>
+                                </div>
+                              )}
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 <Badge variant="secondary" className={`text-[10px] ${cat.color}`}>
                                   {cat.label}
@@ -327,6 +382,35 @@ export default function Biblioteca() {
             <Button variant="destructive" onClick={() => { deleteFolderMutation.mutate(confirmFolderId); setConfirmFolderId(null); }}>
               Remover
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Viewer Modal */}
+      <Dialog open={!!previewDoc} onOpenChange={() => setPreviewDoc(null)}>
+        <DialogContent className="max-w-4xl w-full h-[90vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="px-4 py-3 border-b border-border flex-row items-center justify-between">
+            <DialogTitle className="text-sm font-semibold truncate pr-4">{previewDoc?.title}</DialogTitle>
+            {previewDoc?.file_url && (
+              <a
+                href={previewDoc.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-xs text-primary hover:underline shrink-0"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Abrir em nova aba
+              </a>
+            )}
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {previewDoc?.file_url && (
+              <iframe
+                src={previewDoc.file_url}
+                className="w-full h-full border-0"
+                title={previewDoc.title}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
