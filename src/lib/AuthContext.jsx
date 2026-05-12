@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkUserAuth = async () => {
     setIsLoadingAuth(true);
+    const TOKEN_KEYS = ['base44_access_token', 'base44_token', 'token'];
     try {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
@@ -38,6 +39,9 @@ export const AuthProvider = ({ children }) => {
       if (currentUser && currentUser.is_approved !== true && currentUser.role !== 'admin') {
         try {
           await base44.functions.invoke('selfApprove', {});
+          // Recarrega dados do usuário após aprovação
+          const updatedUser = await base44.auth.me();
+          setUser(updatedUser);
         } catch (_) {
           // silencioso — não bloqueia o fluxo de autenticação
         }
@@ -46,8 +50,12 @@ export const AuthProvider = ({ children }) => {
       console.error('User auth check failed:', error);
       setIsAuthenticated(false);
       setAuthChecked(true);
+
       if (error.status === 401 || error.status === 403) {
-        setAuthError({ type: 'auth_required', message: 'Authentication required' });
+        // Token inválido ou expirado — limpa tudo e redireciona para login
+        TOKEN_KEYS.forEach(k => localStorage.removeItem(k));
+        base44.auth.redirectToLogin(window.location.href);
+        return;
       }
     } finally {
       setIsLoadingAuth(false);
@@ -86,10 +94,18 @@ export const AuthProvider = ({ children }) => {
 
       if (appError.status === 403 && appError.data?.extra_data?.reason) {
         const reason = appError.data.extra_data.reason;
-        // Se temos token e o app retornou auth_required, o token pode estar expirado
-        // Tenta auth check mesmo assim antes de redirecionar
-        if (reason === 'auth_required' && storedToken) {
-          // checkUserAuth já foi disparado em paralelo — aguarda resultado
+
+        if (reason === 'auth_required') {
+          if (storedToken) {
+            // Token pode estar expirado — checkUserAuth já foi disparado em paralelo, aguarda
+            // Se falhar, será tratado no catch do checkUserAuth com redirect
+          } else {
+            // Sem token + app privado → redireciona imediatamente para login
+            // Limpa qualquer resíduo de sessão anterior antes de redirecionar
+            TOKEN_KEYS.forEach(k => localStorage.removeItem(k));
+            base44.auth.redirectToLogin(window.location.href);
+            return;
+          }
         } else {
           setAuthError({ type: reason, message: appError.message });
         }
