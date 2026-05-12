@@ -30,14 +30,9 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'user not found in payload' });
     }
 
-    // If auth_provider is 'google', auto-approve
-    if (targetUser.auth_provider === 'google') {
-      await base44.asServiceRole.entities.User.update(userId, { is_approved: true });
-      return Response.json({ approved: true, userId });
-    }
-
-    // For email/password users, leave is_approved = false (pending manual approval)
-    return Response.json({ approved: false, userId, reason: 'email/password user — awaiting manual approval' });
+    // Auto-approve all new users (access is controlled via invite)
+    await base44.asServiceRole.entities.User.update(userId, { is_approved: true });
+    return Response.json({ approved: true, userId });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
