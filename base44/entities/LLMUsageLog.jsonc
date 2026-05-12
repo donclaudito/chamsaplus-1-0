@@ -62,10 +62,15 @@
     "output_tokens"
   ],
   "rls": {
+    "create": {
+      "user_condition": {
+        "isAuthenticated": true
+      }
+    },
     "read": {
       "$or": [
         {
-          "user_id": "{{user.email}}"
+          "data.user_id": "{{user.email}}"
         },
         {
           "user_condition": {
