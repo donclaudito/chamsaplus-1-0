@@ -104,7 +104,7 @@ const ChatMessage = React.memo(function ChatMessage({ message, onRetryWithoutCan
       )}
 
       <div className={`
-        max-w-[90%] sm:max-w-[80%] group relative
+        max-w-[90%] sm:max-w-[80%] lg:max-w-[75%] xl:max-w-[70%] 2xl:max-w-[65%] group relative
         ${isAssistant
           ? 'bg-card border border-border rounded-2xl rounded-tl-md px-4 py-3'
           : 'bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-4 py-3'
