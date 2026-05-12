@@ -26,6 +26,13 @@ const APPROVED_DOMAINS = [
 
 Deno.serve(async (req) => {
   try {
+    // ─── Autenticação: só aceita chamadas da plataforma Base44 (automações de entidade) ───
+    const authHeader = req.headers.get('Authorization') || '';
+    const appId = Deno.env.get('BASE44_APP_ID');
+    if (!appId || authHeader !== `Bearer ${appId}`) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const payload = await req.json();
 
     // Pode ser chamado via automação de entidade ou diretamente
