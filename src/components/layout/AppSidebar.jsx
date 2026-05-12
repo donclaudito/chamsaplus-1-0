@@ -4,9 +4,10 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   MessageSquare, FolderSearch, Beaker, Plus, X, BrainCircuit,
   MoreVertical, Share2, Pin, PinOff, Pencil, Trash2, Check,
-  CheckSquare, Square, Plug, Users
+  CheckSquare, Square, Plug, Users, LogOut
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const navItems = [
@@ -416,9 +417,19 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
 
         {/* Footer */}
         <div className="p-4 border-t border-slate-200">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] text-slate-500 tracking-wide font-semibold">MOTOR IA ATIVO</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] text-slate-500 tracking-wide font-semibold">MOTOR IA ATIVO</span>
+            </div>
+            <button
+              onClick={() => base44.auth.logout('/')}
+              className="p-1.5 hover:bg-red-50 hover:text-red-500 text-slate-400 rounded-lg transition-colors"
+              title="Sair"
+              aria-label="Sair da conta"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </aside>
