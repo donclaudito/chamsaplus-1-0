@@ -81,6 +81,12 @@ export default function Biblioteca() {
     onError: () => toast({ title: 'Erro ao criar pasta', variant: 'destructive' }),
   });
 
+  const moveFolderMutation = useMutation({
+    mutationFn: ({ id, parentId }) => base44.entities.KnowledgeFolder.update(id, { parent_id: parentId || null }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledgeFolders'] }),
+    onError: () => toast({ title: 'Erro ao mover pasta', variant: 'destructive' }),
+  });
+
   const deleteFolderMutation = useMutation({
     mutationFn: async (folderId) => {
       const docsInFolder = documents.filter(d => d.folder_id === folderId);
@@ -155,6 +161,7 @@ export default function Biblioteca() {
                 onSelect={setSelectedFolder}
                 onCreateFolder={(data) => createFolderMutation.mutate(data)}
                 onDeleteFolder={(id) => setConfirmFolderId(id)}
+                onMoveFolder={(id, parentId) => moveFolderMutation.mutate({ id, parentId })}
                 docCounts={docCounts}
               />
             </div>
