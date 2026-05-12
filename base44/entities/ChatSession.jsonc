@@ -49,16 +49,13 @@
   "rls": {
     "create": {
       "user_condition": {
-        "isAuthenticated": true
+        "role": "user"
       }
     },
     "read": {
       "$or": [
         {
           "created_by": "{{user.email}}"
-        },
-        {
-          "data.is_shared": true
         },
         {
           "user_condition": {
