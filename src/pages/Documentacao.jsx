@@ -414,7 +414,7 @@ export default function Documentacao() {
   const totalFunctions = sections.reduce((acc, s) => acc + s.functions.length, 0);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
@@ -433,6 +433,7 @@ export default function Documentacao() {
         </div>
       </div>
 
+      <div className="flex-1 overflow-y-auto">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -466,6 +467,7 @@ export default function Documentacao() {
         <p className="text-center text-xs text-muted-foreground pb-8">
           Chamsa ISA v4.1 · Documentação gerada automaticamente · {new Date().toLocaleDateString('pt-BR')}
         </p>
+      </div>
       </div>
     </div>
   );
