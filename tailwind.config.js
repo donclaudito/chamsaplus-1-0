@@ -54,6 +54,7 @@ module.exports = {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			},
+  			dialog: 'hsl(var(--dialog-background))',
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
   				foreground: 'hsl(var(--sidebar-foreground))',
@@ -86,6 +87,12 @@ module.exports = {
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out'
+  		},
+  		transitionDuration: {
+  			'dialog': 'var(--dialog-duration)',
+  		},
+  		boxShadow: {
+  			'dialog': 'var(--dialog-shadow)',
   		}
   	}
   },
