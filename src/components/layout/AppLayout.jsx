@@ -102,7 +102,7 @@ export default function AppLayout() {
           </button>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            <span className="text-xs font-semibold text-muted-foreground tracking-wide hidden sm:block">STRATEGIST</span>
+            <span className="text-xs font-semibold text-muted-foreground tracking-wide hidden sm:block">Chamsa ISA</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-1 rounded-md hidden md:block">
