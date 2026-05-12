@@ -240,9 +240,15 @@ export default function Chat() {
       const updatedMessages = [...newMessages, assistantMsg];
       setMessagesAndPersist(updatedMessages);
     } catch (error) {
+      const friendlyMessage = error.message?.includes('network') || error.message?.includes('fetch')
+        ? '⚠️ **Erro de conexão:** Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.'
+        : error.message?.includes('timeout')
+        ? '⚠️ **Tempo esgotado:** A requisição demorou demais. Tente uma mensagem mais curta ou tente novamente.'
+        : `⚠️ **Erro ao gerar resposta:** ${error.message || 'Erro desconhecido. Tente novamente.'}`;
+
       const errorMsg = {
         role: 'assistant',
-        content: `⚠️ **Aviso de Sistema:** ${error.message}`,
+        content: friendlyMessage,
         timestamp: new Date().toISOString(),
       };
       setMessagesAndPersist([...newMessages, errorMsg]);
@@ -266,7 +272,7 @@ export default function Chat() {
 
   if (!activeChat) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center" role="status" aria-label="Nenhuma sessão ativa">
         <p className="text-muted-foreground text-sm">Crie uma nova sessão para começar.</p>
       </div>
     );
@@ -316,6 +322,7 @@ export default function Chat() {
               <button
                 onClick={() => setManualModel(activeModel)}
                 className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 hidden sm:block"
+                aria-label="Fixar modelo atual"
               >
                 fixar modelo
               </button>
@@ -324,6 +331,7 @@ export default function Chat() {
               <button
                 onClick={() => setManualModel(null)}
                 className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 hidden sm:block"
+                aria-label="Voltar para roteamento automático de modelo"
               >
                 voltar auto
               </button>
