@@ -15,12 +15,8 @@ export const AuthProvider = ({ children }) => {
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
 
   useEffect(() => {
-    // Se há token na URL, o app-params.js já salvou e vai recarregar a página.
-    // Não inicia o checkAppState para evitar requisições sem autenticação antes do reload.
-    const urlParams = new URLSearchParams(window.location.search);
-    const incomingToken = urlParams.get('access_token') || urlParams.get('_b44_token');
-    if (incomingToken) return; // aguarda o reload do app-params.js
-
+    // app-params.js já intercepta tokens na URL, salva no localStorage e faz reload.
+    // Aqui apenas iniciamos a verificação do estado de autenticação normalmente.
     checkAppState();
   }, []);
 
