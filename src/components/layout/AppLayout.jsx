@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Menu, UserCircle } from 'lucide-react';
+import { Menu, UserCircle, LogOut } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
@@ -115,6 +115,14 @@ export default function AppLayout() {
               </span>
             </div>
           )}
+          <button
+            onClick={() => base44.auth.logout('/')}
+            className="p-2 hover:bg-red-50 hover:text-red-500 text-muted-foreground rounded-lg transition-colors"
+            title="Sair"
+            aria-label="Sair da conta"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </header>
       <div className="flex-1 overflow-hidden">
