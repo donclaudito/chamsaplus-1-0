@@ -7,9 +7,14 @@ import { cn } from "@/lib/utils"
 
 const Drawer = ({
   shouldScaleBackground = true,
+  direction = "bottom",
   ...props
 }) => (
-  <DrawerPrimitive.Root shouldScaleBackground={shouldScaleBackground} {...props} />
+  <DrawerPrimitive.Root
+    shouldScaleBackground={shouldScaleBackground}
+    direction={direction}
+    {...props}
+  />
 )
 Drawer.displayName = "Drawer"
 
@@ -27,17 +32,23 @@ const DrawerOverlay = React.forwardRef(({ className, ...props }, ref) => (
 ))
 DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
 
-const DrawerContent = React.forwardRef(({ className, children, ...props }, ref) => (
+const DrawerContent = React.forwardRef(({ className, children, showHandle = true, ...props }, ref) => (
   <DrawerPortal>
     <DrawerOverlay />
     <DrawerPrimitive.Content
       ref={ref}
+      aria-describedby={props['aria-describedby']}
       className={cn(
         "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
         className
       )}
       {...props}>
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+      {showHandle && (
+        <div
+          aria-hidden="true"
+          className="mx-auto mt-4 h-1.5 w-[60px] rounded-full bg-border"
+        />
+      )}
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>
