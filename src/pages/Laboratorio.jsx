@@ -133,11 +133,9 @@ export default function Laboratorio() {
                 <VectorIndexPanel />
               </CollapsiblePanel>
 
-              {isAdmin && (
-                <CollapsiblePanel title="Consumo LLM — Dia / Mês" icon={Activity} iconColor="text-emerald-500" defaultOpen={true}>
-                  <LLMConsumoDashboard />
-                </CollapsiblePanel>
-              )}
+              <CollapsiblePanel title="Consumo LLM — Dia / Mês" icon={Activity} iconColor="text-emerald-500" defaultOpen={true}>
+                <LLMConsumoDashboard />
+              </CollapsiblePanel>
 
               <CollapsiblePanel title="Métricas de Performance" icon={Sparkles} iconColor="text-amber-500" defaultOpen={false}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
