@@ -345,7 +345,7 @@ export default function Chat() {
         </div>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6">
-          <div className="max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto space-y-4">
+          <div className="max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto space-y-4">
             {messages.map((msg, i) => (
               <ChatMessage
                 key={i}
