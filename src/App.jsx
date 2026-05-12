@@ -19,6 +19,7 @@ const ChamsaOverview        = lazy(() => import('@/pages/ChamsaOverview'));
 const PendingApproval       = lazy(() => import('@/pages/PendingApproval'));
 const PendingEmailVerification = lazy(() => import('@/pages/PendingEmailVerification'));
 const AdminUsers            = lazy(() => import('@/pages/AdminUsers'));
+const Documentacao          = lazy(() => import('@/pages/Documentacao'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user, isAuthenticated } = useAuth();
@@ -69,6 +70,9 @@ const AuthenticatedApp = () => {
         <Route path="/chamsa-overview" element={<ChamsaOverview />} />
         {user?.role === 'admin' && (
           <Route path="/admin/usuarios" element={<AdminUsers />} />
+        )}
+        {user?.role === 'admin' && (
+          <Route path="/admin/documentacao" element={<Documentacao />} />
         )}
       </Route>
       <Route path="/share/:shareId" element={<SharedChat />} />

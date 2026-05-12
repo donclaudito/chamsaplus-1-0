@@ -401,9 +401,9 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
           </div>
         </div>
 
-        {/* Admin link */}
+        {/* Admin links */}
         {user?.role === 'admin' && (
-          <div className="px-3 pb-1">
+          <div className="px-3 pb-1 space-y-1">
             <Link
               to="/admin/usuarios"
               onClick={onClose}
@@ -415,6 +415,18 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
             >
               <Users className="w-4 h-4" />
               Gerenciar Usuários
+            </Link>
+            <Link
+              to="/admin/documentacao"
+              onClick={onClose}
+              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all
+                ${location.pathname === '/admin/documentacao'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'}
+              `}
+            >
+              <span className="text-sm">📄</span>
+              Documentação Técnica
             </Link>
           </div>
         )}
