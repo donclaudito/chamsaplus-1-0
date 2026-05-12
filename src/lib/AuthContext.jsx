@@ -33,6 +33,15 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUser);
       setIsAuthenticated(true);
       setAuthChecked(true);
+
+      // Auto-aprova o usuário se ainda não estiver aprovado (resolve login via Google)
+      if (currentUser && currentUser.is_approved !== true && currentUser.role !== 'admin') {
+        try {
+          await base44.functions.invoke('selfApprove', {});
+        } catch (_) {
+          // silencioso — não bloqueia o fluxo de autenticação
+        }
+      }
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsAuthenticated(false);
