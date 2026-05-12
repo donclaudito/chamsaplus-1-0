@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   MessageSquare, FolderSearch, Beaker, Plus, X, BrainCircuit,
   MoreVertical, Share2, Pin, PinOff, Pencil, Trash2, Check,
-  CheckSquare, Square, Plug, Users, LogOut
+  CheckSquare, Square, Plug, Users, LogOut, HelpCircle
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
@@ -15,6 +15,7 @@ const navItems = [
   { path: '/biblioteca', icon: FolderSearch, label: 'Biblioteca', color: 'text-emerald-400' },
   { path: '/laboratorio', icon: Beaker, label: 'Laboratório', color: 'text-purple-400' },
   { path: '/integracoes', icon: Plug, label: 'Integrações', color: 'text-amber-400' },
+  { path: '/ajuda', icon: HelpCircle, label: 'Ajuda', color: 'text-rose-400' },
 ];
 
 function ChatContextMenu({ chat, onClose, onRename, onPin, onDelete, onShare, isDeleting = false }) {

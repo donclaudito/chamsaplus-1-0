@@ -20,6 +20,7 @@ const PendingApproval       = lazy(() => import('@/pages/PendingApproval'));
 const PendingEmailVerification = lazy(() => import('@/pages/PendingEmailVerification'));
 const AdminUsers            = lazy(() => import('@/pages/AdminUsers'));
 const Documentacao          = lazy(() => import('@/pages/Documentacao'));
+const Ajuda                 = lazy(() => import('@/pages/Ajuda'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user, isAuthenticated } = useAuth();
@@ -68,6 +69,7 @@ const AuthenticatedApp = () => {
         <Route path="/laboratorio" element={<Laboratorio />} />
         <Route path="/integracoes" element={<Integracoes />} />
         <Route path="/chamsa-overview" element={<ChamsaOverview />} />
+        <Route path="/ajuda" element={<Ajuda />} />
         {user?.role === 'admin' && (
           <Route path="/admin/usuarios" element={<AdminUsers />} />
         )}
