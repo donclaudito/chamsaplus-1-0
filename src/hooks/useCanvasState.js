@@ -1,31 +1,25 @@
-import { useState } from 'react';
+import { useState, useDebugValue } from 'react';
+
+const CLOSED = { title: null, content: null };
 
 export function useCanvasState() {
-  const [canvasContent, setCanvasContent] = useState(null);
-  const [canvasTitle, setCanvasTitle] = useState(null);
+  // Agrupa title+content num único objeto — evita dois setState separados
+  const [canvas, setCanvas] = useState(CLOSED);
   const [canvasMode, setCanvasMode] = useState(false);
 
-  const openCanvas = (title, content) => {
-    setCanvasTitle(title);
-    setCanvasContent(content);
-  };
+  useDebugValue(canvas.content ? `open: "${canvas.title}"` : "closed");
 
-  const closeCanvas = () => {
-    setCanvasContent(null);
-    setCanvasTitle(null);
-    // Não desliga canvasMode ao fechar — usuário precisa desativar manualmente
-  };
+  const openCanvas = (title, content) => setCanvas({ title, content });
 
-  const resetCanvas = () => {
-    setCanvasContent(null);
-    setCanvasTitle(null);
-  };
+  // Não desliga canvasMode ao fechar — usuário precisa desativar manualmente
+  const closeCanvas  = () => setCanvas(CLOSED);
+  const resetCanvas  = () => setCanvas(CLOSED);
 
   const toggleCanvasMode = () => setCanvasMode((prev) => !prev);
 
   return {
-    canvasContent,
-    canvasTitle,
+    canvasContent: canvas.content,
+    canvasTitle:   canvas.title,
     canvasMode,
     setCanvasMode,
     openCanvas,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useDebugValue } from 'react';
 import { base44 } from '@/api/base44Client';
 import { detectModel, MODELS } from '@/lib/modelRouter';
 
@@ -11,26 +11,26 @@ const PROVIDER_LABELS = {
   together: 'Together AI',
 };
 
+const buildBadge = (cfg) =>
+  cfg ? { label: PROVIDER_LABELS[cfg.provider] || cfg.provider, modelId: cfg.model_id, provider: cfg.provider } : null;
+
+const fetchActiveLLMConfig = () =>
+  base44.entities.UserLLMConfig.filter({ is_active: true });
+
 export function useLLMConfig() {
   const [manualModel, setManualModel] = useState(null);
   const [activeModel, setActiveModel] = useState('claude_sonnet_4_6');
   const [activeLLMBadge, setActiveLLMBadge] = useState(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+
+  useDebugValue(activeLLMBadge ? `provider: ${activeLLMBadge.provider}` : "base44 default");
 
   useEffect(() => {
-    base44.entities.UserLLMConfig.filter({ is_active: true })
-      .then((configs) => {
-        if (configs?.length > 0) {
-          const cfg = configs[0];
-          setActiveLLMBadge({
-            label: PROVIDER_LABELS[cfg.provider] || cfg.provider,
-            modelId: cfg.model_id,
-            provider: cfg.provider,
-          });
-        } else {
-          setActiveLLMBadge(null);
-        }
-      })
-      .catch(() => setActiveLLMBadge(null));
+    setIsLoadingConfig(true);
+    fetchActiveLLMConfig()
+      .then((configs) => setActiveLLMBadge(configs?.length > 0 ? buildBadge(configs[0]) : null))
+      .catch(() => setActiveLLMBadge(null))
+      .finally(() => setIsLoadingConfig(false));
   }, []);
 
   const resolveModel = (text, hasDataBlocks, hasVectorContext) => {
@@ -39,23 +39,14 @@ export function useLLMConfig() {
     return chosen;
   };
 
-  const updateBadgeFromConfig = (config) => {
-    if (config) {
-      setActiveLLMBadge({
-        label: PROVIDER_LABELS[config.provider] || config.provider,
-        modelId: config.model_id,
-        provider: config.provider,
-      });
-    } else {
-      setActiveLLMBadge(null);
-    }
-  };
+  const updateBadgeFromConfig = (config) => setActiveLLMBadge(buildBadge(config));
 
   return {
     manualModel,
     setManualModel,
     activeModel,
     activeLLMBadge,
+    isLoadingConfig,
     resolveModel,
     updateBadgeFromConfig,
     MODELS,

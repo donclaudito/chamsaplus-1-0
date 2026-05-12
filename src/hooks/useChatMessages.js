@@ -2,6 +2,21 @@ import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 
+// Backup no Drive separado do mutationFn — mantém o fluxo principal limpo
+const mirrorToDrive = ({ activeChatId, sessionTitle, folderId, driveFileIdRef, newMessages }) => {
+  if (!folderId || !activeChatId) return;
+  base44.functions.invoke('saveChatToDrive', {
+    sessionId: activeChatId,
+    sessionTitle: sessionTitle || 'Chat sem título',
+    messages: newMessages,
+    folderId,
+    driveFileId: driveFileIdRef.current || null,
+  }).then(res => {
+    if (res?.data?.driveFileId) driveFileIdRef.current = res.data.driveFileId;
+    else if (res?.data?.error) console.warn('[Drive backup] Erro ao salvar:', res.data.error);
+  }).catch((err) => console.warn('[Drive backup] Falha na chamada:', err?.message || err));
+};
+
 export function useChatMessages(activeChatId, { folderId, sessionTitle } = {}) {
   const [messages, setMessages] = useState([]);
   const queryClient = useQueryClient();
@@ -10,30 +25,13 @@ export function useChatMessages(activeChatId, { folderId, sessionTitle } = {}) {
   const driveFileIdRef = useRef(null);
 
   const updateChatMutation = useMutation({
-    mutationFn: async (newMessages) => {
-      // 1. Persist to Base44 DB
-      await base44.entities.ChatSession.update(activeChatId, { messages: newMessages });
-
-      // 2. Mirror to Google Drive (fire-and-forget — don't block chat)
-      if (folderId && activeChatId) {
-        base44.functions.invoke('saveChatToDrive', {
-          sessionId: activeChatId,
-          sessionTitle: sessionTitle || 'Chat sem título',
-          messages: newMessages,
-          folderId,
-          driveFileId: driveFileIdRef.current || null,
-        }).then(res => {
-          if (res?.data?.driveFileId) {
-            driveFileIdRef.current = res.data.driveFileId;
-          } else if (res?.data?.error) {
-            console.warn('[Drive backup] Erro ao salvar:', res.data.error);
-          }
-        }).catch((err) => {
-          console.warn('[Drive backup] Falha na chamada:', err?.message || err);
-        });
-      }
+    mutationFn: (newMessages) =>
+      base44.entities.ChatSession.update(activeChatId, { messages: newMessages }),
+    onSuccess: (_, newMessages) => {
+      queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
+      // Mirror to Drive after DB persist succeeds (fire-and-forget)
+      mirrorToDrive({ activeChatId, sessionTitle, folderId, driveFileIdRef, newMessages });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['chatSessions'] }),
   });
 
   const isSaving = updateChatMutation.isPending;
