@@ -12,19 +12,43 @@ const SelectGroup = SelectPrimitive.Group
 
 const SelectValue = SelectPrimitive.Value
 
-const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) => (
-  <SelectPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      "flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-      className
+const SelectTrigger = React.forwardRef(({
+  className,
+  children,
+  isLoading,
+  hasError,
+  helperText,
+  id,
+  ...props
+}, ref) => (
+  <div className="flex flex-col gap-1 w-full">
+    <SelectPrimitive.Trigger
+      ref={ref}
+      id={id}
+      aria-describedby={helperText ? `${id}-help` : undefined}
+      aria-invalid={hasError || undefined}
+      className={cn(
+        "flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background",
+        "data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
+        "disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+        hasError ? "border-destructive focus:ring-destructive" : "border-input",
+        className
+      )}
+      {...props}>
+      {children}
+      <SelectPrimitive.Icon asChild>
+        {isLoading
+          ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" aria-hidden="true" />
+          : <ChevronDown className="h-4 w-4 opacity-50" aria-hidden="true" />
+        }
+      </SelectPrimitive.Icon>
+    </SelectPrimitive.Trigger>
+    {helperText && (
+      <p id={`${id}-help`} className={cn("text-xs", hasError ? "text-destructive" : "text-muted-foreground")}>
+        {helperText}
+      </p>
     )}
-    {...props}>
-    {children}
-    <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 opacity-50" />
-    </SelectPrimitive.Icon>
-  </SelectPrimitive.Trigger>
+  </div>
 ))
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
 
