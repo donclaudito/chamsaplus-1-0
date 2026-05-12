@@ -13,6 +13,6 @@ export const base44 = createClient({
   appId,
   functionsVersion,
   serverUrl: '',
-  requiresAuth: false,
+  requiresAuth: true,
   appBaseUrl
 });

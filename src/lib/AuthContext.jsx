@@ -58,21 +58,25 @@ export const AuthProvider = ({ children }) => {
     setIsLoadingPublicSettings(true);
     setAuthError(null);
 
+    // Lê o token dinamicamente do localStorage (não depende do snapshot estático de appParams)
+    const TOKEN_KEYS = ['base44_access_token', 'base44_token', 'token'];
+    const storedToken = TOKEN_KEYS.map(k => localStorage.getItem(k)).find(Boolean) || appParams.token;
+
     const appClient = createAxiosClient({
       baseURL: `/api/apps/public`,
       headers: { 'X-App-Id': appParams.appId },
-      token: appParams.token,
+      token: storedToken,
       interceptResponses: true,
     });
 
-    // Dispara auth check em paralelo se token já existe — não precisa esperar public settings
-    const authPromise = appParams.token ? checkUserAuth() : Promise.resolve();
+    // Se há token armazenado, dispara auth check em paralelo
+    const authPromise = storedToken ? checkUserAuth() : Promise.resolve();
 
     try {
       const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
       setAppPublicSettings(publicSettings);
 
-      if (!appParams.token) {
+      if (!storedToken) {
         setIsLoadingAuth(false);
         setIsAuthenticated(false);
         setAuthChecked(true);
@@ -82,11 +86,16 @@ export const AuthProvider = ({ children }) => {
 
       if (appError.status === 403 && appError.data?.extra_data?.reason) {
         const reason = appError.data.extra_data.reason;
-        setAuthError({ type: reason, message: appError.message });
+        // Se temos token e o app retornou auth_required, o token pode estar expirado
+        // Tenta auth check mesmo assim antes de redirecionar
+        if (reason === 'auth_required' && storedToken) {
+          // checkUserAuth já foi disparado em paralelo — aguarda resultado
+        } else {
+          setAuthError({ type: reason, message: appError.message });
+        }
       } else {
         setAuthError(resolveHttpError(appError));
       }
-      // Garante que auth loading pare mesmo se public settings falhou
       setIsLoadingAuth(false);
       setAuthChecked(true);
     } finally {

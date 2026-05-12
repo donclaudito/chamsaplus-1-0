@@ -43,13 +43,14 @@ const getAppParams = () => {
 	}
 
 	// Se há um token novo na URL (ex: redirect do Google OAuth), limpa sessão anterior e faz reload
-	const incomingToken = urlParams.get("access_token");
+	const incomingToken = urlParams.get("access_token") || urlParams.get("_b44_token");
 	if (incomingToken) {
 		TOKEN_KEYS.forEach(k => storage.removeItem(k));
 		// Salva o token imediatamente antes de recarregar
 		storage.setItem('base44_access_token', incomingToken);
 		// Remove o token da URL e recarrega para que os assets sejam carregados com sessão válida
 		urlParams.delete("access_token");
+		urlParams.delete("_b44_token");
 		const qs = urlParams.toString();
 		const newUrl = `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`;
 		window.history.replaceState({}, document.title, newUrl);

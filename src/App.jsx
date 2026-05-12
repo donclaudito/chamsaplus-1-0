@@ -32,8 +32,12 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
+      // Só redireciona para login se realmente não está autenticado
+      // (evita redirect quando o app é privado mas o usuário já tem token válido)
+      if (!isAuthenticated) {
+        navigateToLogin();
+        return null;
+      }
     }
   }
 
