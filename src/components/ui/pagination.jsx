@@ -32,11 +32,13 @@ PaginationItem.displayName = "PaginationItem"
 const PaginationLink = ({
   className,
   isActive,
+  page,
   size = "icon",
   ...props
 }) => (
   <a
     aria-current={isActive ? "page" : undefined}
+    aria-label={page ? `Ir para página ${page}` : undefined}
     className={cn(buttonVariants({
       variant: isActive ? "outline" : "ghost",
       size,
@@ -47,30 +49,34 @@ PaginationLink.displayName = "PaginationLink"
 
 const PaginationPrevious = ({
   className,
+  disabled,
   ...props
 }) => (
   <PaginationLink
-    aria-label="Go to previous page"
+    aria-label="Ir para página anterior"
+    aria-disabled={disabled}
     size="default"
-    className={cn("gap-1 pl-2.5", className)}
+    className={cn("gap-1 pl-2.5", disabled && "pointer-events-none opacity-40", className)}
     {...props}>
-    <ChevronLeft className="h-4 w-4" />
-    <span>Previous</span>
+    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+    <span>Anterior</span>
   </PaginationLink>
 )
 PaginationPrevious.displayName = "PaginationPrevious"
 
 const PaginationNext = ({
   className,
+  disabled,
   ...props
 }) => (
   <PaginationLink
-    aria-label="Go to next page"
+    aria-label="Ir para próxima página"
+    aria-disabled={disabled}
     size="default"
-    className={cn("gap-1 pr-2.5", className)}
+    className={cn("gap-1 pr-2.5", disabled && "pointer-events-none opacity-40", className)}
     {...props}>
-    <span>Next</span>
-    <ChevronRight className="h-4 w-4" />
+    <span>Próxima</span>
+    <ChevronRight className="h-4 w-4" aria-hidden="true" />
   </PaginationLink>
 )
 PaginationNext.displayName = "PaginationNext"

@@ -4,9 +4,12 @@ import { Minus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const InputOTP = React.forwardRef(({ className, containerClassName, ...props }, ref) => (
+const InputOTP = React.forwardRef(({ className, containerClassName, autoFocus = false, pattern = "^[0-9]*$", onComplete, ...props }, ref) => (
   <OTPInput
     ref={ref}
+    autoFocus={autoFocus}
+    pasteTransformer={(text) => text.replace(/\D/g, "")}
+    onComplete={onComplete}
     containerClassName={cn("flex items-center gap-2 has-[:disabled]:opacity-50", containerClassName)}
     className={cn("disabled:cursor-not-allowed", className)}
     {...props} />
@@ -18,7 +21,7 @@ const InputOTPGroup = React.forwardRef(({ className, ...props }, ref) => (
 ))
 InputOTPGroup.displayName = "InputOTPGroup"
 
-const InputOTPSlot = React.forwardRef(({ index, className, ...props }, ref) => {
+const InputOTPSlot = React.forwardRef(({ index, className, hasError, hasSuccess, ...props }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext)
   const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index]
 
@@ -28,6 +31,8 @@ const InputOTPSlot = React.forwardRef(({ index, className, ...props }, ref) => {
       className={cn(
         "relative flex h-9 w-9 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
         isActive && "z-10 ring-1 ring-ring",
+        hasError && "border-destructive ring-1 ring-destructive",
+        hasSuccess && "border-green-500 ring-1 ring-green-500",
         className
       )}
       {...props}>

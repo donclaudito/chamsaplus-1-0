@@ -9,19 +9,38 @@ const RadioGroup = React.forwardRef(({ className, ...props }, ref) => {
 })
 RadioGroup.displayName = RadioGroupPrimitive.Root.displayName
 
-const RadioGroupItem = React.forwardRef(({ className, ...props }, ref) => {
+const radioItemVariants = {
+  sm: "h-3.5 w-3.5",
+  md: "h-4 w-4",
+  lg: "h-5 w-5",
+}
+
+const radioIndicatorVariants = {
+  sm: "h-2 w-2",
+  md: "h-3.5 w-3.5",
+  lg: "h-4 w-4",
+}
+
+const RadioGroupItem = React.forwardRef(({ className, size = "md", description, ...props }, ref) => {
   return (
-    (<RadioGroupPrimitive.Item
+    <RadioGroupPrimitive.Item
       ref={ref}
+      aria-describedby={description ? `${props.id}-desc` : undefined}
       className={cn(
-        "aspect-square h-4 w-4 rounded-full border border-primary text-primary shadow focus:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+        "aspect-square rounded-full border border-primary text-primary shadow",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        radioItemVariants[size],
         className
       )}
       {...props}>
       <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
-        <Circle className="h-3.5 w-3.5 fill-primary" />
+        <Circle className={cn("fill-primary", radioIndicatorVariants[size])} aria-hidden="true" />
       </RadioGroupPrimitive.Indicator>
-    </RadioGroupPrimitive.Item>)
+      {description && (
+        <span id={`${props.id}-desc`} className="sr-only">{description}</span>
+      )}
+    </RadioGroupPrimitive.Item>
   );
 })
 RadioGroupItem.displayName = RadioGroupPrimitive.Item.displayName
