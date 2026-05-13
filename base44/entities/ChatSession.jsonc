@@ -61,6 +61,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.is_shared": true
+            },
+            {
+              "data.share_id": {
+                "$exists": true
+              }
+            }
+          ]
         }
       ]
     },
