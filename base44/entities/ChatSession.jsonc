@@ -49,7 +49,7 @@
   "rls": {
     "create": {
       "user_condition": {
-        "role": "user"
+        "isAuthenticated": true
       }
     },
     "read": {
