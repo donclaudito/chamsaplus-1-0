@@ -97,6 +97,9 @@ export const AuthProvider = ({ children }) => {
         setIsLoadingAuth(false);
         setIsAuthenticated(false);
         setAuthChecked(true);
+        // App carregou com sucesso mas não há token — redireciona para login imediatamente
+        base44.auth.redirectToLogin(window.location.href);
+        return;
       }
     } catch (appError) {
       console.error('App state check failed:', appError);

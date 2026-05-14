@@ -23,7 +23,7 @@ const Documentacao          = lazy(() => import('@/pages/Documentacao'));
 const Ajuda                 = lazy(() => import('@/pages/Ajuda'));
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user, isAuthenticated } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user, isAuthenticated, authChecked } = useAuth();
 
   if (isLoadingPublicSettings || isLoadingAuth) return <AppLoader />;
 
@@ -32,13 +32,17 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Só redireciona para login se realmente não está autenticado
-      // (evita redirect quando o app é privado mas o usuário já tem token válido)
       if (!isAuthenticated) {
         navigateToLogin();
         return null;
       }
     }
+  }
+
+  // Guard geral: se a verificação terminou e o usuário não está autenticado, redireciona para login
+  if (authChecked && !isAuthenticated) {
+    navigateToLogin();
+    return null;
   }
 
   // Block users with unverified email (email/password signups) — admins are never blocked
