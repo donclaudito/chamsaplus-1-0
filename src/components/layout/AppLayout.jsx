@@ -52,10 +52,10 @@ export default function AppLayout() {
   });
 
   const createChatMutation = useMutation({
-    mutationFn: () => base44.entities.ChatSession.create({
+    mutationFn: () => base44.functions.invoke('createChatSession', {
       title: `Consulta ${chatSessions.length + 1}`,
       messages: [{ role: 'assistant', content: 'Sessão iniciada, Doutor. Pronto para análise estratégica.', timestamp: new Date().toISOString() }],
-    }),
+    }).then(res => res.data),
     onSuccess: (newChat) => {
       queryClient.setQueryData(['chatSessions', currentUser?.email], (old = []) => [newChat, ...old]);
       setActiveChatId(newChat.id);
