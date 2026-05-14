@@ -42,19 +42,19 @@ const getAppParams = () => {
 		TOKEN_KEYS.forEach(k => storage.removeItem(k));
 	}
 
-	// Se há um token novo na URL (ex: redirect do Google OAuth), limpa sessão anterior e faz reload
+	// Se há um token novo na URL (ex: redirect do Google OAuth), salva e limpa a URL sem recarregar
 	const incomingToken = urlParams.get("access_token") || urlParams.get("_b44_token");
 	if (incomingToken) {
+		// Limpa tokens antigos e salva o novo
 		TOKEN_KEYS.forEach(k => storage.removeItem(k));
-		// Salva o token imediatamente antes de recarregar
 		storage.setItem('base44_access_token', incomingToken);
-		// Remove o token da URL e recarrega para que os assets sejam carregados com sessão válida
+		// Remove o token da URL sem recarregar a página (evita 401 nos assets dinâmicos)
 		urlParams.delete("access_token");
 		urlParams.delete("_b44_token");
 		const qs = urlParams.toString();
 		const newUrl = `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`;
 		window.history.replaceState({}, document.title, newUrl);
-		window.location.reload();
+		// Não faz reload — o AuthContext já lê o token do localStorage na inicialização
 	}
 
 	return {

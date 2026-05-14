@@ -54,7 +54,14 @@ export const AuthProvider = ({ children }) => {
       setAuthChecked(true);
 
       if (error.status === 401 || error.status === 403) {
-        // Token inválido ou expirado — limpa tudo e redireciona para login
+        // Verifica se há token no localStorage antes de redirecionar
+        // (evita loop quando o token acabou de ser salvo pelo OAuth redirect)
+        const hasToken = TOKEN_KEYS.map(k => localStorage.getItem(k)).some(Boolean);
+        if (!hasToken) {
+          base44.auth.redirectToLogin(window.location.href);
+          return;
+        }
+        // Se tem token mas deu 401/403, o token é inválido — limpa e redireciona
         TOKEN_KEYS.forEach(k => localStorage.removeItem(k));
         base44.auth.redirectToLogin(window.location.href);
         return;
@@ -102,11 +109,16 @@ export const AuthProvider = ({ children }) => {
             // Token pode estar expirado — checkUserAuth já foi disparado em paralelo, aguarda
             // Se falhar, será tratado no catch do checkUserAuth com redirect
           } else {
-            // Sem token + app privado → redireciona imediatamente para login
-            // Limpa qualquer resíduo de sessão anterior antes de redirecionar
-            TOKEN_KEYS.forEach(k => localStorage.removeItem(k));
-            base44.auth.redirectToLogin(window.location.href);
-            return;
+            // Verifica novamente no localStorage (token pode ter sido salvo pelo OAuth redirect neste tick)
+            const freshToken = TOKEN_KEYS.map(k => localStorage.getItem(k)).find(Boolean);
+            if (!freshToken) {
+              // Sem token + app privado → redireciona imediatamente para login
+              TOKEN_KEYS.forEach(k => localStorage.removeItem(k));
+              base44.auth.redirectToLogin(window.location.href);
+              return;
+            }
+            // Token foi salvo agora pelo redirect OAuth — inicia checkUserAuth e aguarda
+            checkUserAuth();
           }
         } else {
           setAuthError({ type: reason, message: appError.message });
