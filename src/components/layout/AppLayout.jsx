@@ -116,7 +116,7 @@ export default function AppLayout() {
             </div>
           )}
           <button
-            onClick={() => base44.auth.logout('/')}
+            onClick={() => base44.auth.logout()}
             className="p-2 hover:bg-red-50 hover:text-red-500 text-muted-foreground rounded-lg transition-colors"
             title="Sair"
             aria-label="Sair da conta"

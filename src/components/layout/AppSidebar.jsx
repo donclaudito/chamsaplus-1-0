@@ -439,7 +439,7 @@ export default function AppSidebar({ isOpen, onClose, chats, activeChatId, onSel
               <span className="text-[10px] text-slate-500 tracking-wide font-semibold">MOTOR IA ATIVO</span>
             </div>
             <button
-              onClick={() => base44.auth.logout('/')}
+              onClick={() => base44.auth.logout()}
               className="p-1.5 hover:bg-red-50 hover:text-red-500 text-slate-400 rounded-lg transition-colors"
               title="Sair"
               aria-label="Sair da conta"
