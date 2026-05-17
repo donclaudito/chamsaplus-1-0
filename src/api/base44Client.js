@@ -182,22 +182,62 @@ const entities = {
 
 export const base44 = {
   auth: {
-    me: async () => ({
-      id: 'usr_chamsa_123',
-      email: 'dr.chamsa@hospital.gov',
-      name: 'Dr. Chamsa',
-      role: 'admin',
-      is_approved: true,
-      is_verified: true,
-      created_date: new Date().toISOString()
-    }),
-    redirectToLogin: () => {
-      console.log('[base44Client] redirectToLogin interceptado (modo autônomo).');
+    me: async () => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          const res = await fetch('http://localhost:3000/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            return {
+              id: data.dadosUsuario?.id || 'usr_1',
+              email: data.dadosUsuario?.email || 'usuario@chamsa.gov',
+              name: data.dadosUsuario?.nome || data.dadosUsuario?.email || 'Usuário Autenticado',
+              role: 'admin',
+              is_approved: true,
+              is_verified: true,
+              created_date: new Date().toISOString()
+            };
+          }
+        } catch (e) {
+          console.warn('[base44Client] Backend de autenticação indisponível. Usando fallback local.');
+        }
+      }
+
+      // Fallback local: se tiver authUser salvo no localStorage pelo login/cadastro local
+      const localUser = localStorage.getItem('authUser');
+      if (localUser) {
+        try {
+          const parsed = JSON.parse(localUser);
+          return {
+            id: parsed.id || 'usr_local',
+            email: parsed.email || 'usuario@chamsa.gov',
+            name: parsed.nome || parsed.email || 'Usuário Local',
+            role: 'admin',
+            is_approved: true,
+            is_verified: true,
+            created_date: new Date().toISOString()
+          };
+        } catch (_) {}
+      }
+
+      // Se não tiver token nem usuário local, não está autenticado
+      throw new Error('401 Unauthorized');
     },
-    logout: (redirectUrl) => {
-      console.log('[base44Client] logout interceptado.');
-      if (redirectUrl) window.location.href = redirectUrl;
-      else window.location.reload();
+    redirectToLogin: () => {
+      console.log('[base44Client] redirectToLogin acionado.');
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        window.location.href = '/login';
+      }
+    },
+    logout: () => {
+      console.log('[base44Client] logout acionado.');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('authUser');
+      sessionStorage.removeItem('initial_chat_created');
+      window.location.href = '/login';
     }
   },
   integrations: {

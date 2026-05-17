@@ -23,10 +23,29 @@ export default function AppLayout() {
 
   const [activeChatId, setActiveChatId] = useState(null);
 
-  // Seleciona o primeiro chat apenas quando ainda não há nenhum ativo
+  const createChatMutation = useMutation({
+    mutationFn: () => base44.entities.ChatSession.create({
+      title: `Consulta ${chatSessions.length + 1}`,
+      created_by: currentUser?.email || 'dr.chamsa@hospital.gov',
+      created_date: new Date().toISOString(),
+      pinned: false,
+      messages: [{ role: 'assistant', content: 'Sessão iniciada, Doutor. Pronto para análise estratégica.', timestamp: new Date().toISOString() }],
+    }),
+    onSuccess: (newChat) => {
+      queryClient.setQueryData(['chatSessions', currentUser?.email], (old = []) => [newChat, ...old]);
+      setActiveChatId(newChat.id);
+    },
+  });
+
+  // Ao abrir o app após o login (quando não há activeChatId e o initial_chat_created não está no sessionStorage), cria uma nova sessão
   useEffect(() => {
     if (!activeChatId && chatSessions.length > 0) {
-      setActiveChatId(chatSessions[0].id);
+      if (!sessionStorage.getItem('initial_chat_created')) {
+        sessionStorage.setItem('initial_chat_created', 'true');
+        createChatMutation.mutate();
+      } else {
+        setActiveChatId(chatSessions[0].id);
+      }
     }
   }, [chatSessions, activeChatId]);
 
@@ -49,17 +68,6 @@ export default function AppLayout() {
   const pinChatMutation = useMutation({
     mutationFn: ({ id, pinned }) => base44.entities.ChatSession.update(id, { pinned }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['chatSessions'] }),
-  });
-
-  const createChatMutation = useMutation({
-    mutationFn: () => base44.entities.ChatSession.create({
-      title: `Consulta ${chatSessions.length + 1}`,
-      messages: [{ role: 'assistant', content: 'Sessão iniciada, Doutor. Pronto para análise estratégica.', timestamp: new Date().toISOString() }],
-    }),
-    onSuccess: (newChat) => {
-      queryClient.setQueryData(['chatSessions', currentUser?.email], (old = []) => [newChat, ...old]);
-      setActiveChatId(newChat.id);
-    },
   });
 
   const bulkDeleteMutation = useMutation({

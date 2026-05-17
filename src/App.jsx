@@ -20,6 +20,8 @@ const PendingEmailVerification = lazy(() => import('@/pages/PendingEmailVerifica
 const AdminUsers            = lazy(() => import('@/pages/AdminUsers'));
 const Documentacao          = lazy(() => import('@/pages/Documentacao'));
 const Ajuda                 = lazy(() => import('@/pages/Ajuda'));
+const Login                 = lazy(() => import('@/pages/Login'));
+const Register              = lazy(() => import('@/pages/Register'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user, isAuthenticated, authChecked } = useAuth();
@@ -98,7 +100,13 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <MedicalDataProvider>
           <Router>
-            <AuthenticatedApp />
+            <Suspense fallback={<AppLoader />}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="*" element={<AuthenticatedApp />} />
+              </Routes>
+            </Suspense>
           </Router>
         </MedicalDataProvider>
         <Toaster />
