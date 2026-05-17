@@ -11,11 +11,14 @@ export default function Register() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    try {
-      const all = base44.entities.User.getItems();
-      const sorted = [...all].sort((a, b) => new Date(b.last_login_date || b.created_date || 0) - new Date(a.last_login_date || a.created_date || 0));
-      setRecentUsers(sorted.slice(0, 3));
-    } catch (_) {}
+    async function fetchRecent() {
+      try {
+        const all = await base44.entities.User.list();
+        const sorted = [...all].sort((a, b) => new Date(b.last_login_date || b.created_date || 0) - new Date(a.last_login_date || a.created_date || 0));
+        setRecentUsers(sorted.slice(0, 3));
+      } catch (_) {}
+    }
+    fetchRecent();
   }, []);
 
   const handleQuickLogin = async (user) => {
