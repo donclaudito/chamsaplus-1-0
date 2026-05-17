@@ -235,15 +235,18 @@ export const base44 = {
             const data = await res.json();
             const email = data.dadosUsuario?.email || 'usuario@chamsa.gov';
             const role = (email === 'clauorenstein@gmail.com' || email === 'dr.chamsa@hospital.gov') ? 'admin' : 'user';
-            return {
-              id: data.dadosUsuario?.id || 'usr_1',
+            const uObj = {
+              id: data.dadosUsuario?.id ? `usr_${data.dadosUsuario.id}` : 'usr_1',
               email,
               name: data.dadosUsuario?.nome || email,
               role,
               is_approved: true,
               is_verified: true,
-              created_date: new Date().toISOString()
+              created_date: new Date().toISOString(),
+              last_login_date: new Date().toISOString()
             };
+            await entities.User.create(uObj);
+            return uObj;
           }
         } catch (e) {
           console.warn('[base44Client] Backend de autenticação indisponível. Usando fallback local.');
@@ -257,15 +260,18 @@ export const base44 = {
           const parsed = JSON.parse(localUser);
           const email = parsed.email || 'usuario@chamsa.gov';
           const role = (email === 'clauorenstein@gmail.com' || email === 'dr.chamsa@hospital.gov') ? 'admin' : 'user';
-          return {
+          const uObj = {
             id: parsed.id || 'usr_local',
             email,
             name: parsed.nome || email,
             role,
             is_approved: true,
             is_verified: true,
-            created_date: new Date().toISOString()
+            created_date: new Date().toISOString(),
+            last_login_date: new Date().toISOString()
           };
+          await entities.User.create(uObj);
+          return uObj;
         } catch (_) {}
       }
 

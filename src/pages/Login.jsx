@@ -40,7 +40,8 @@ export default function Login() {
             name: data.usuario.nome || data.usuario.email.split('@')[0],
             role: 'user',
             is_approved: true,
-            is_verified: true
+            is_verified: true,
+            last_login_date: new Date().toISOString()
           });
         }
         setTimeout(() => window.location.href = '/', 1500);
@@ -61,7 +62,8 @@ export default function Login() {
         name: mockUser.nome,
         role: 'user',
         is_approved: true,
-        is_verified: true
+        is_verified: true,
+        last_login_date: new Date().toISOString()
       });
       setStatus({
         type: 'success',
