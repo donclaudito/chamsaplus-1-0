@@ -1,12 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { Users, Calendar, LogIn } from 'lucide-react';
 
 export default function Register() {
   const [formData, setFormData] = useState({ nome: '', email: '', senha: '' });
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ type: null, message: '' });
+  const [recentUsers, setRecentUsers] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    try {
+      const all = base44.entities.User.getItems();
+      const sorted = [...all].sort((a, b) => new Date(b.last_login_date || b.created_date || 0) - new Date(a.last_login_date || a.created_date || 0));
+      setRecentUsers(sorted.slice(0, 3));
+    } catch (_) {}
+  }, []);
+
+  const handleQuickLogin = async (user) => {
+    localStorage.setItem('authToken', `mock_token_${user.id}`);
+    localStorage.setItem('authUser', JSON.stringify({ id: user.id, email: user.email, nome: user.name || user.full_name }));
+    await base44.entities.User.create({
+      ...user,
+      last_login_date: new Date().toISOString()
+    });
+    setStatus({
+      type: 'success',
+      message: `Bem-vindo de volta, ${user.name || user.email}! Acessando o sistema...`
+    });
+    setTimeout(() => window.location.href = '/', 1500);
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -40,7 +64,8 @@ export default function Register() {
           name: mockUser.nome,
           role: 'user',
           is_approved: true,
-          is_verified: true
+          is_verified: true,
+          last_login_date: new Date().toISOString()
         });
         setFormData({ nome: '', email: '', senha: '' });
         setTimeout(() => window.location.href = '/login', 2500);
@@ -61,7 +86,8 @@ export default function Register() {
         name: mockUser.nome,
         role: 'user',
         is_approved: true,
-        is_verified: true
+        is_verified: true,
+        last_login_date: new Date().toISOString()
       });
       setStatus({
         type: 'success',
@@ -167,6 +193,41 @@ export default function Register() {
             Faça login
           </button>
         </div>
+
+        {recentUsers.length > 0 && (
+          <div className="mt-8 pt-6 border-t border-slate-800/80 animate-in fade-in-50 duration-300">
+            <div className="flex items-center gap-2 mb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider justify-center">
+              <Users className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Contas Logadas Recentemente</span>
+            </div>
+            <div className="space-y-2.5">
+              {recentUsers.map(u => (
+                <div 
+                  key={u.id}
+                  onClick={() => handleQuickLogin(u)}
+                  className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/40 border border-slate-700/50 hover:border-indigo-500/50 hover:bg-slate-800/80 transition-all cursor-pointer group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-sm font-bold text-indigo-400 shrink-0 group-hover:scale-105 transition-transform">
+                    {(u.name || u.full_name || u.email || '?')[0].toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-semibold text-slate-200 truncate group-hover:text-indigo-300 transition-colors">{u.name || u.full_name || '—'}</p>
+                    <p className="text-xs text-slate-400 truncate">{u.email}</p>
+                    {u.last_login_date && (
+                      <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5">
+                        <Calendar className="w-2.5 h-2.5" />
+                        <span>Acesso: {new Date(u.last_login_date).toLocaleDateString('pt-BR')} às {new Date(u.last_login_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    )}
+                  </div>
+                  <button className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all shrink-0" title="Entrar com esta conta">
+                    <LogIn className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
