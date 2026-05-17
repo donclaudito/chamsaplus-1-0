@@ -8,7 +8,6 @@ import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
 import ThinkingIndicator from '@/components/chat/ThinkingIndicator';
 import PasteDataModal from '@/components/chat/PasteDataModal';
-import ModelSelector from '@/components/chat/ModelSelector.jsx';
 import LLMUsageBar from '@/components/chat/LLMUsageBar.jsx';
 import DriveSourceConfig from '@/components/chat/DriveSourceConfig';
 import CanvasPanel from '@/components/chat/CanvasPanel';
@@ -279,8 +278,6 @@ export default function Chat() {
     );
   }
 
-  const modelForDisplay = manualModel || activeModel;
-
   const chatColumn = (
     <div className="flex flex-col h-full min-h-0 min-w-0">
         {/* Save status indicator */}
@@ -307,7 +304,7 @@ export default function Chat() {
           <div className="flex items-center gap-2">
             <DriveSourceConfig folderId={driveFolderId} onSave={handleSaveDriveFolder} />
             <span className="text-muted-foreground/50 font-mono hidden sm:inline">
-              {manualModel ? '🔒 Modelo fixo' : '🤖 Auto-routing ativo'}
+              🤖 Auto-routing ativo
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -317,29 +314,6 @@ export default function Chat() {
                 {activeLLMBadge.label} · {activeLLMBadge.modelId}
               </span>
             )}
-            {!manualModel && (
-              <button
-                onClick={() => setManualModel(activeModel)}
-                className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 hidden sm:block"
-                aria-label="Fixar modelo atual"
-              >
-                fixar modelo
-              </button>
-            )}
-            {manualModel && (
-              <button
-                onClick={() => setManualModel(null)}
-                className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 hidden sm:block"
-                aria-label="Voltar para roteamento automático de modelo"
-              >
-                voltar auto
-              </button>
-            )}
-            <ModelSelector
-              selectedModel={modelForDisplay}
-              onChange={(id) => setManualModel(id)}
-              autoMode={!manualModel}
-            />
           </div>
         </div>
 

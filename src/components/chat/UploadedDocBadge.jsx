@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { FileText, X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';

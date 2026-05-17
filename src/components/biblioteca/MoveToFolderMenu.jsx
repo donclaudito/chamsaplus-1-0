@@ -3,7 +3,6 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuTrigger, DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
-import { FolderInput } from 'lucide-react';
 
 export default function MoveToFolderMenu({ folders, onMove, children }) {
   return (

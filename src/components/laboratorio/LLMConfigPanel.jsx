@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Trash2, CheckCircle2, Eye, EyeOff, Zap, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Eye, EyeOff, Zap, AlertCircle, Loader2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const PROVIDERS = [
@@ -20,7 +20,7 @@ const PROVIDERS = [
 
 const EMPTY_FORM = { provider: 'openai', model_id: '', model_label: '', api_key_encrypted: '', max_tokens: 2048, temperature: 0.3, base_url: '' };
 
-function ConfigCard({ cfg, onToggle, onDelete, isDeleting }) {
+function ConfigCard({ cfg, onToggle, onEdit, onDelete, isDeleting }) {
   const [showKey, setShowKey] = useState(false);
   const provider = PROVIDERS.find(p => p.id === cfg.provider);
 
@@ -62,6 +62,14 @@ function ConfigCard({ cfg, onToggle, onDelete, isDeleting }) {
             </Button>
           )}
           <button
+            onClick={() => onEdit(cfg)}
+            disabled={isDeleting}
+            className="p-1.5 rounded-lg hover:bg-amber-100 hover:text-amber-600 transition-all"
+            title="Editar configuração"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button
             onClick={() => onDelete(cfg.id)}
             disabled={isDeleting}
             className="p-1.5 rounded-lg hover:bg-red-100 hover:text-red-500 transition-all"
@@ -77,6 +85,7 @@ function ConfigCard({ cfg, onToggle, onDelete, isDeleting }) {
 export default function LLMConfigPanel() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [providerSearch, setProviderSearch] = useState('');
   const [testStatus, setTestStatus] = useState(null); // null | 'testing' | 'ok' | 'error'
@@ -90,6 +99,11 @@ export default function LLMConfigPanel() {
   const createMutation = useMutation({
     mutationFn: async (data) => {
       const cfg = await base44.entities.UserLLMConfig.create(data);
+      if (cfg.api_key_encrypted) {
+        const provKey = cfg.provider.toUpperCase();
+        localStorage.setItem(`LLM_KEY_${provKey}`, cfg.api_key_encrypted);
+        localStorage.setItem(`${provKey}_API_KEY`, cfg.api_key_encrypted);
+      }
       // Sync to CustomPlatform so it shows up in ModelSelector
       const providerLabel = PROVIDERS.find(p => p.id === data.provider)?.label || data.provider;
       await base44.entities.CustomPlatform.create({
@@ -107,8 +121,25 @@ export default function LLMConfigPanel() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.UserLLMConfig.update(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['userLLMConfigs'] }),
+    mutationFn: async ({ id, data }) => {
+      const updated = await base44.entities.UserLLMConfig.update(id, data);
+      if (updated.api_key_encrypted) {
+        const provKey = updated.provider.toUpperCase();
+        localStorage.setItem(`LLM_KEY_${provKey}`, updated.api_key_encrypted);
+        localStorage.setItem(`${provKey}_API_KEY`, updated.api_key_encrypted);
+      }
+      // Sync CustomPlatform
+      const platforms = await base44.entities.CustomPlatform.filter({ _user_llm_config_id: id });
+      if (platforms.length > 0) {
+        const providerLabel = PROVIDERS.find(p => p.id === updated.provider)?.label || updated.provider;
+        await base44.entities.CustomPlatform.update(platforms[0].id, {
+          name: providerLabel,
+          plans: [{ label: updated.model_label || updated.model_id, model_id: updated.model_id, description: `via ${providerLabel}`, credits: '' }]
+        });
+      }
+      return updated;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['userLLMConfigs'] }); qc.invalidateQueries({ queryKey: ['customPlatforms'] }); },
   });
 
   const deleteMutation = useMutation({
@@ -135,7 +166,24 @@ export default function LLMConfigPanel() {
   const handleSave = () => {
     if (!form.api_key_encrypted || !form.model_id) return;
     const label = form.model_label || form.model_id;
-    createMutation.mutate({ ...form, model_label: label });
+    if (isEditing && form.id) {
+      updateMutation.mutate({ id: form.id, data: { ...form, model_label: label } }, {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: ['userLLMConfigs'] });
+          setShowForm(false);
+          setForm(EMPTY_FORM);
+          setIsEditing(false);
+        }
+      });
+    } else {
+      createMutation.mutate({ ...form, model_label: label });
+    }
+  };
+
+  const handleEdit = (cfg) => {
+    setForm(cfg);
+    setIsEditing(true);
+    setShowForm(true);
   };
 
   const handleTest = async () => {
@@ -192,7 +240,7 @@ export default function LLMConfigPanel() {
             <span className="text-xs text-muted-foreground">Nenhum LLM próprio ativo — usando padrão Chamsa</span>
           )}
         </div>
-        <Button size="sm" onClick={() => setShowForm(v => !v)} className="gap-1.5">
+        <Button size="sm" onClick={() => { setShowForm(v => !v); if (!showForm) { setForm(EMPTY_FORM); setIsEditing(false); } }} className="gap-1.5">
           <Plus className="w-3.5 h-3.5" />
           {showForm ? 'Cancelar' : 'Adicionar API'}
         </Button>
@@ -201,7 +249,7 @@ export default function LLMConfigPanel() {
       {/* Form */}
       {showForm && (
         <div className="mb-5 p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-3">
-          <h4 className="text-sm font-bold text-foreground">Nova Configuração de LLM</h4>
+          <h4 className="text-sm font-bold text-foreground">{isEditing ? 'Editar Configuração de LLM' : 'Nova Configuração de LLM'}</h4>
 
           {/* Provider */}
           <div>
@@ -329,9 +377,9 @@ export default function LLMConfigPanel() {
               {testStatus === 'testing' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
               Testar Conexão
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={createMutation.isPending} className="gap-1.5 flex-1">
-              {createMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-              Salvar Configuração
+            <Button size="sm" onClick={handleSave} disabled={createMutation.isPending || updateMutation.isPending} className="gap-1.5 flex-1">
+              {createMutation.isPending || updateMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+              {isEditing ? 'Atualizar Configuração' : 'Salvar Configuração'}
             </Button>
           </div>
         </div>
@@ -351,6 +399,7 @@ export default function LLMConfigPanel() {
               key={cfg.id}
               cfg={cfg}
               onToggle={handleToggle}
+              onEdit={handleEdit}
               onDelete={(id) => deleteMutation.mutate(id)}
               isDeleting={deleteMutation.isPending}
             />

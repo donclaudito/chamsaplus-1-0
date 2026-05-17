@@ -14,7 +14,6 @@ const Chat                  = lazy(() => import('@/pages/Chat'));
 const Biblioteca            = lazy(() => import('@/pages/Biblioteca'));
 const Laboratorio           = lazy(() => import('@/pages/Laboratorio'));
 const SharedChat            = lazy(() => import('@/pages/SharedChat'));
-const Integracoes           = lazy(() => import('@/pages/Integracoes'));
 const ChamsaOverview        = lazy(() => import('@/pages/ChamsaOverview'));
 const PendingApproval       = lazy(() => import('@/pages/PendingApproval'));
 const PendingEmailVerification = lazy(() => import('@/pages/PendingEmailVerification'));
@@ -75,7 +74,6 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<Chat />} />
         <Route path="/biblioteca" element={<Biblioteca />} />
         <Route path="/laboratorio" element={<Laboratorio />} />
-        <Route path="/integracoes" element={<Integracoes />} />
         <Route path="/chamsa-overview" element={<ChamsaOverview />} />
         <Route path="/ajuda" element={<Ajuda />} />
         {user?.role === 'admin' && (

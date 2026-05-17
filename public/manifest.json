@@ -1,0 +1,15 @@
+t{
+  "name": "Chamsa Isa Plus",
+  "short_name": "Chamsa Isa",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "https://media.base44.com/images/public/69fca602fc26c81e3e0767df/2215309d9_orengostei.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Database, RefreshCw, CheckCircle2, AlertCircle, Zap, Trash2 } from 'lucide-react';
+import { RefreshCw, CheckCircle2, AlertCircle, Zap, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 

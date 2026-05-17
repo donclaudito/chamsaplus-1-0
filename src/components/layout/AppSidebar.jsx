@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import ShareDialog from '@/components/chat/ShareDialog';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  MessageSquare, FolderSearch, Beaker, Plus, X, BrainCircuit,
+  MessageSquare, FolderSearch, Beaker, Plus, X,
   MoreVertical, Share2, Pin, PinOff, Pencil, Trash2, Check,
-  CheckSquare, Square, Plug, Users, LogOut, HelpCircle
+  CheckSquare, Square, Users, LogOut, HelpCircle
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
@@ -14,7 +14,6 @@ const navItems = [
   { path: '/', icon: MessageSquare, label: 'Chat Isa', color: 'text-indigo-400' },
   { path: '/biblioteca', icon: FolderSearch, label: 'Biblioteca', color: 'text-emerald-400' },
   { path: '/laboratorio', icon: Beaker, label: 'Laboratório', color: 'text-purple-400' },
-  { path: '/integracoes', icon: Plug, label: 'Integrações', color: 'text-amber-400' },
   { path: '/ajuda', icon: HelpCircle, label: 'Ajuda', color: 'text-rose-400' },
 ];
 

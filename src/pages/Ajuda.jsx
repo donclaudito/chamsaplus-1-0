@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { ChevronDown, ChevronUp, MessageSquare, FolderSearch, Beaker, Plug, Users, Brain, Upload, Share2, Pin, Trash2, Search, Key, Zap, BookOpen, HelpCircle, Shield, X, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronUp, MessageSquare, FolderSearch, Beaker, Plug, Users, Brain, Pin, Zap, BookOpen, HelpCircle, Shield, ExternalLink } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 

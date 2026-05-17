@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Folder, FolderOpen, Plus, Trash2, FolderSearch, ChevronRight, ChevronDown, FolderPlus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Folder, Plus, Trash2, FolderSearch, ChevronRight, ChevronDown, FolderPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';

@@ -66,9 +66,12 @@ export default function IntegrationCard({ template, existingSecret, onRemove, is
   return (
     <div className={`border rounded-xl overflow-hidden transition-shadow ${template.border} ${expanded ? 'shadow-md' : 'shadow-sm hover:shadow-md'}`}>
       {/* Header */}
-      <button
-        className={`w-full flex items-center justify-between px-4 py-3.5 ${template.bg} transition-colors`}
+      <div
+        role="button"
+        tabIndex={0}
+        className={`w-full flex items-center justify-between px-4 py-3.5 ${template.bg} transition-colors cursor-pointer`}
         onClick={() => setExpanded(v => !v)}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setExpanded(v => !v); }}
       >
         <div className="flex items-center gap-3">
           <div className={`w-8 h-8 rounded-lg bg-white border ${template.border} flex items-center justify-center shrink-0`}>
@@ -97,7 +100,7 @@ export default function IntegrationCard({ template, existingSecret, onRemove, is
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </motion.div>
         </div>
-      </button>
+      </div>
 
       {/* Body */}
       <AnimatePresence initial={false}>
