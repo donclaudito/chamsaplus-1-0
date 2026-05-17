@@ -22,21 +22,33 @@ function createLocalStorageEntity(entityName, initialData = [], isGlobal = false
   const getItems = () => {
     if (typeof window === 'undefined') return initialData;
     const storageKey = getStorageKey();
+    const curUser = getCurrentUserEmail();
+    const isAdmin = curUser === 'dr.chamsa@hospital.gov' || curUser === 'clauorenstein@gmail.com';
+    const init = (entityName === 'UserLLMConfig' && !isAdmin) ? [] : initialData;
+
     const existing = localStorage.getItem(storageKey);
     if (!existing) {
-      localStorage.setItem(storageKey, JSON.stringify(initialData));
-      return initialData;
+      localStorage.setItem(storageKey, JSON.stringify(init));
+      return init;
     }
     try {
       const parsed = JSON.parse(existing);
       if (entityName === 'UserLLMConfig') {
-        if (!parsed.some(c => c.id === 'cfg_mixtral')) {
-          const mixtralCfg = initialData.find(c => c.id === 'cfg_mixtral');
-          if (mixtralCfg) {
-            parsed.forEach(c => c.is_active = false);
-            parsed.unshift(mixtralCfg);
-            localStorage.setItem(storageKey, JSON.stringify(parsed));
+        if (isAdmin) {
+          if (!parsed.some(c => c.id === 'cfg_mixtral')) {
+            const mixtralCfg = init.find(c => c.id === 'cfg_mixtral');
+            if (mixtralCfg) {
+              parsed.forEach(c => c.is_active = false);
+              parsed.unshift(mixtralCfg);
+              localStorage.setItem(storageKey, JSON.stringify(parsed));
+            }
           }
+        } else {
+          const userOnly = parsed.filter(c => !c.id.startsWith('cfg_'));
+          if (userOnly.length < parsed.length) {
+            localStorage.setItem(storageKey, JSON.stringify(userOnly));
+          }
+          return userOnly;
         }
       }
       if (entityName === 'User') {
@@ -57,7 +69,7 @@ function createLocalStorageEntity(entityName, initialData = [], isGlobal = false
       }
       return parsed;
     } catch (_) {
-      return initialData;
+      return init;
     }
   };
 
@@ -306,20 +318,51 @@ export const base44 = {
       console.log(`[base44Client] function invoke: ${functionName}`, args);
 
       if (functionName === 'listSecrets') {
+        const getConf = (p) => {
+          const sanitizeKey = (k) => k ? k.replace(/[^\x20-\x7E]/g, '').trim() : '';
+          const pUpper = p.toUpperCase();
+          if (sanitizeKey(localStorage.getItem(`ADMIN_${pUpper}_API_KEY`))) return true;
+          if (sanitizeKey(localStorage.getItem(`${pUpper}_API_KEY`)) || sanitizeKey(localStorage.getItem(`LLM_KEY_${pUpper}`))) return true;
+          const adminEmails = ['dr.chamsa@hospital.gov', 'clauorenstein@gmail.com'];
+          for (const email of adminEmails) {
+            try {
+              const raw = localStorage.getItem(`chamsa_entity_UserLLMConfig_${email}`);
+              if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed.some(c => c.provider === p && c.api_key_encrypted && c.api_key_encrypted.trim().length > 0)) return true;
+              }
+            } catch (_) {}
+          }
+          return false;
+        };
+
         const secrets = [];
-        if (localStorage.getItem('GROQ_API_KEY') || localStorage.getItem('LLM_KEY_GROQ')) secrets.push({ name: 'GROQ_API_KEY', configured: true });
-        if (localStorage.getItem('OPENAI_API_KEY') || localStorage.getItem('LLM_KEY_OPENAI')) secrets.push({ name: 'OPENAI_API_KEY', configured: true });
-        if (localStorage.getItem('MISTRAL_API_KEY') || localStorage.getItem('LLM_KEY_MISTRAL')) secrets.push({ name: 'MISTRAL_API_KEY', configured: true });
-        if (localStorage.getItem('GOOGLE_API_KEY') || localStorage.getItem('LLM_KEY_GOOGLE') || localStorage.getItem('LLM_KEY_GEMINI')) secrets.push({ name: 'GOOGLE_API_KEY', configured: true });
-        if (localStorage.getItem('ANTHROPIC_API_KEY') || localStorage.getItem('LLM_KEY_ANTHROPIC')) secrets.push({ name: 'ANTHROPIC_API_KEY', configured: true });
+        if (getConf('groq')) secrets.push({ name: 'GROQ_API_KEY', configured: true });
+        if (getConf('openai')) secrets.push({ name: 'OPENAI_API_KEY', configured: true });
+        if (getConf('mistral')) secrets.push({ name: 'MISTRAL_API_KEY', configured: true });
+        if (getConf('google') || getConf('gemini')) secrets.push({ name: 'GOOGLE_API_KEY', configured: true });
+        if (getConf('anthropic')) secrets.push({ name: 'ANTHROPIC_API_KEY', configured: true });
+        if (getConf('deepseek')) secrets.push({ name: 'DEEPSEEK_API_KEY', configured: true });
+        if (getConf('xai')) secrets.push({ name: 'XAI_API_KEY', configured: true });
+        if (getConf('perplexity')) secrets.push({ name: 'PERPLEXITY_API_KEY', configured: true });
+        if (getConf('cohere')) secrets.push({ name: 'COHERE_API_KEY', configured: true });
         return { data: { secrets } };
       }
 
       if (functionName === 'saveApiKey') {
         const { secretName, apiKey, provider } = args;
-        localStorage.setItem(secretName, apiKey);
-        if (provider) {
-          localStorage.setItem(`LLM_KEY_${provider.toUpperCase()}`, apiKey);
+        const curUser = getCurrentUserEmail();
+        const isAdmin = curUser === 'dr.chamsa@hospital.gov' || curUser === 'clauorenstein@gmail.com';
+        if (isAdmin) {
+          localStorage.setItem(secretName, apiKey);
+          if (provider) {
+            localStorage.setItem(`ADMIN_${provider.toUpperCase()}_API_KEY`, apiKey);
+            localStorage.setItem(`LLM_KEY_${provider.toUpperCase()}`, apiKey);
+          }
+        } else {
+          if (provider) {
+            localStorage.setItem(`USER_${provider.toUpperCase()}_API_KEY_${curUser}`, apiKey);
+          }
         }
         return { data: { success: true } };
       }
@@ -400,7 +443,7 @@ export const base44 = {
         const isCanvasMode = systemMsg.includes('MODO CANVAS ATIVO');
 
         const allUserConfigs = await entities.UserLLMConfig.list('-created_date', 50);
-        const validUserConfigs = allUserConfigs.filter(c => c.api_key_encrypted && c.api_key_encrypted.trim().length > 0);
+        const validUserConfigs = allUserConfigs.filter(c => c.api_key_encrypted && c.api_key_encrypted.trim().length > 0 && !c.api_key_encrypted.includes('••••'));
         const activeCfg = validUserConfigs.find(c => c.is_active) || validUserConfigs[0];
 
         let provider = 'mock';
@@ -409,19 +452,36 @@ export const base44 = {
         let apiModel = model;
 
         const sanitizeKey = (k) => k ? k.replace(/[^\x20-\x7E]/g, '').trim() : '';
-        let groqKey = sanitizeKey(localStorage.getItem('GROQ_API_KEY') || localStorage.getItem('LLM_KEY_GROQ'));
-        let mistralKey = sanitizeKey(localStorage.getItem('MISTRAL_API_KEY') || localStorage.getItem('LLM_KEY_MISTRAL'));
-        let openaiKey = sanitizeKey(localStorage.getItem('OPENAI_API_KEY') || localStorage.getItem('LLM_KEY_OPENAI'));
-        let geminiKey = sanitizeKey(localStorage.getItem('GOOGLE_API_KEY') || localStorage.getItem('LLM_KEY_GOOGLE') || localStorage.getItem('LLM_KEY_GEMINI'));
-        let anthropicKey = sanitizeKey(localStorage.getItem('ANTHROPIC_API_KEY') || localStorage.getItem('LLM_KEY_ANTHROPIC'));
+        
+        function getAdminFallbackKey(prov) {
+          const pUpper = prov.toUpperCase();
+          let key = sanitizeKey(localStorage.getItem(`ADMIN_${pUpper}_API_KEY`));
+          if (key && !key.includes('••••')) return key;
+          key = sanitizeKey(localStorage.getItem(`${pUpper}_API_KEY`)) || sanitizeKey(localStorage.getItem(`LLM_KEY_${pUpper}`));
+          if (key && !key.includes('••••')) return key;
+          const adminEmails = ['dr.chamsa@hospital.gov', 'clauorenstein@gmail.com'];
+          for (const email of adminEmails) {
+            try {
+              const raw = localStorage.getItem(`chamsa_entity_UserLLMConfig_${email}`);
+              if (raw) {
+                const parsed = JSON.parse(raw);
+                const match = parsed.find(c => c.provider === prov && c.api_key_encrypted && c.api_key_encrypted.trim().length > 0 && !c.api_key_encrypted.includes('••••'));
+                if (match) return sanitizeKey(match.api_key_encrypted);
+              }
+            } catch (_) {}
+          }
+          return null;
+        }
 
-        validUserConfigs.forEach(c => {
-          if (c.provider === 'mistral' && !mistralKey) mistralKey = sanitizeKey(c.api_key_encrypted);
-          if (c.provider === 'groq' && !groqKey) groqKey = sanitizeKey(c.api_key_encrypted);
-          if (c.provider === 'openai' && !openaiKey) openaiKey = sanitizeKey(c.api_key_encrypted);
-          if (c.provider === 'google' && !geminiKey) geminiKey = sanitizeKey(c.api_key_encrypted);
-          if (c.provider === 'anthropic' && !anthropicKey) anthropicKey = sanitizeKey(c.api_key_encrypted);
-        });
+        let groqKey = getAdminFallbackKey('groq');
+        let mistralKey = getAdminFallbackKey('mistral');
+        let openaiKey = getAdminFallbackKey('openai');
+        let geminiKey = getAdminFallbackKey('google') || getAdminFallbackKey('gemini');
+        let anthropicKey = getAdminFallbackKey('anthropic');
+        let deepseekKey = getAdminFallbackKey('deepseek');
+        let xaiKey = getAdminFallbackKey('xai');
+        let perplexityKey = getAdminFallbackKey('perplexity');
+        let cohereKey = getAdminFallbackKey('cohere');
 
         if (activeCfg && activeCfg.api_key_encrypted) {
           provider = activeCfg.provider;
@@ -461,8 +521,38 @@ export const base44 = {
           else if (apiKey === groqKey && groqKey) { provider = 'groq'; apiUrl = 'https://api.groq.com/openai/v1/chat/completions'; apiModel = 'llama-3.3-70b-versatile'; }
           else if (apiKey === openaiKey && openaiKey) { provider = 'openai'; apiUrl = 'https://api.openai.com/v1/chat/completions'; apiModel = 'gpt-4o'; }
           else if (apiKey === geminiKey && geminiKey) { provider = 'google'; apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiKey}`; }
+        } else if (model.includes('deepseek')) {
+          apiKey = deepseekKey || groqKey || openaiKey || mistralKey;
+          if (apiKey === deepseekKey && deepseekKey) { provider = 'deepseek'; apiUrl = 'https://api.deepseek.com/v1/chat/completions'; }
+          else if (apiKey === groqKey && groqKey) { provider = 'groq'; apiUrl = 'https://api.groq.com/openai/v1/chat/completions'; apiModel = 'deepseek-r1-distill-llama-70b'; }
+          else if (apiKey === openaiKey && openaiKey) { provider = 'openai'; apiUrl = 'https://api.openai.com/v1/chat/completions'; apiModel = 'gpt-4o'; }
+        } else if (model.includes('grok') || model.includes('xai')) {
+          apiKey = xaiKey || openaiKey || groqKey;
+          if (apiKey === xaiKey && xaiKey) { provider = 'xai'; apiUrl = 'https://api.x.ai/v1/chat/completions'; }
+          else if (apiKey === openaiKey && openaiKey) { provider = 'openai'; apiUrl = 'https://api.openai.com/v1/chat/completions'; apiModel = 'gpt-4o'; }
+        } else if (model.includes('sonar') || model.includes('perplexity')) {
+          apiKey = perplexityKey || openaiKey || groqKey;
+          if (apiKey === perplexityKey && perplexityKey) { provider = 'perplexity'; apiUrl = 'https://api.perplexity.ai/chat/completions'; }
+          else if (apiKey === openaiKey && openaiKey) { provider = 'openai'; apiUrl = 'https://api.openai.com/v1/chat/completions'; apiModel = 'gpt-4o'; }
+        } else if (model.includes('command') || model.includes('cohere')) {
+          apiKey = cohereKey || openaiKey || groqKey;
+          if (apiKey === cohereKey && cohereKey) { provider = 'cohere'; }
+          else if (apiKey === openaiKey && openaiKey) { provider = 'openai'; apiUrl = 'https://api.openai.com/v1/chat/completions'; apiModel = 'gpt-4o'; }
         } else if (model === 'ollama' || model.includes('localhost')) {
           provider = 'ollama'; apiUrl = 'http://localhost:11434/v1/chat/completions';
+        }
+
+        if (!apiKey && provider !== 'ollama') {
+          apiKey = openaiKey || groqKey || mistralKey || geminiKey || anthropicKey || deepseekKey || xaiKey || perplexityKey || cohereKey;
+          if (apiKey === openaiKey && openaiKey) { provider = 'openai'; apiUrl = 'https://api.openai.com/v1/chat/completions'; apiModel = 'gpt-4o-mini'; }
+          else if (apiKey === groqKey && groqKey) { provider = 'groq'; apiUrl = 'https://api.groq.com/openai/v1/chat/completions'; apiModel = 'llama-3.3-70b-versatile'; }
+          else if (apiKey === mistralKey && mistralKey) { provider = 'mistral'; apiUrl = 'https://api.mistral.ai/v1/chat/completions'; apiModel = 'mistral-small-latest'; }
+          else if (apiKey === geminiKey && geminiKey) { provider = 'google'; apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`; }
+          else if (apiKey === anthropicKey && anthropicKey) { provider = 'anthropic'; apiUrl = 'https://api.anthropic.com/v1/messages'; apiModel = 'claude-3-5-sonnet-latest'; }
+          else if (apiKey === deepseekKey && deepseekKey) { provider = 'deepseek'; apiUrl = 'https://api.deepseek.com/v1/chat/completions'; apiModel = 'deepseek-chat'; }
+          else if (apiKey === xaiKey && xaiKey) { provider = 'xai'; apiUrl = 'https://api.x.ai/v1/chat/completions'; apiModel = 'grok-2-1212'; }
+          else if (apiKey === perplexityKey && perplexityKey) { provider = 'perplexity'; apiUrl = 'https://api.perplexity.ai/chat/completions'; apiModel = 'sonar'; }
+          else if (apiKey === cohereKey && cohereKey) { provider = 'cohere'; apiModel = 'command-r-08-2024'; }
         }
 
         if (apiUrl && (apiKey || provider === 'ollama')) {

@@ -6,11 +6,15 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const KNOWN_SECRETS = [
-  'GROQ_API_KEY',
-  'OPENAI_API_KEY',
-  'ANTHROPIC_API_KEY',
-  'GOOGLE_API_KEY',
-  'MISTRAL_API_KEY',
+  'GROQ',
+  'OPENAI',
+  'ANTHROPIC',
+  'GOOGLE',
+  'MISTRAL',
+  'DEEPSEEK',
+  'XAI',
+  'PERPLEXITY',
+  'COHERE',
 ];
 
 Deno.serve(async (req) => {
@@ -20,10 +24,10 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
 
-    const result = KNOWN_SECRETS.map((name) => {
-      const value = Deno.env.get(name) || '';
+    const result = KNOWN_SECRETS.map((prefix) => {
+      const value = Deno.env.get(`ADMIN_${prefix}_API_KEY`) || Deno.env.get(`${prefix}_API_KEY`) || '';
       return {
-        name,
+        name: `${prefix}_API_KEY`,
         configured: value.length > 0,
       };
     });

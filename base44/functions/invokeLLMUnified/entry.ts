@@ -164,15 +164,16 @@ Deno.serve(async (req) => {
     let inputTokens  = 0;
     let outputTokens = 0;
 
-    // 1. Verificar se o usuário tem LLM customizado ativo
+    // 1. Verificar se o usuário tem LLM customizado ativo com chave válida
     const configs = await base44.entities.UserLLMConfig.filter({ created_by: user.email, is_active: true });
-    if (configs?.length) {
-      const cfg = configs[0];
-      const apiKey     = cfg.api_key_encrypted;
-      const maxTokens  = cfg.max_tokens || 2048;
-      const temperature = cfg.temperature ?? 0.3;
-      modelId  = cfg.model_id;
-      provider = cfg.provider;
+    const userCfg = configs?.find(c => c.api_key_encrypted && c.api_key_encrypted.trim().length > 0 && !c.api_key_encrypted.includes('••••'));
+
+    if (userCfg) {
+      const apiKey     = userCfg.api_key_encrypted;
+      const maxTokens  = userCfg.max_tokens || 2048;
+      const temperature = userCfg.temperature ?? 0.3;
+      modelId  = userCfg.model_id;
+      provider = userCfg.provider;
 
       let result;
       if (provider === 'anthropic') {
@@ -182,7 +183,7 @@ Deno.serve(async (req) => {
       } else if (provider === 'cohere') {
         result = await callCohere(apiKey, messages, modelId, maxTokens, temperature);
       } else {
-        const endpoint = cfg.base_url || PROVIDER_ENDPOINTS[provider];
+        const endpoint = userCfg.base_url || PROVIDER_ENDPOINTS[provider];
         if (!endpoint) return Response.json({ error: `Provedor "${provider}" não suportado. Informe a Base URL manualmente.` }, { status: 400 });
         result = await callOpenAICompatible(endpoint, apiKey, messages, modelId, maxTokens, temperature);
       }
@@ -190,26 +191,111 @@ Deno.serve(async (req) => {
       inputTokens  = result.input_tokens;
       outputTokens = result.output_tokens;
 
-    // 2. Modelo Groq/Llama (provider === 'custom' no modelRouter)
-    } else if (requestedModel === 'llama-3.3-70b-versatile') {
-      const groqKey = Deno.env.get('GROQ_API_KEY');
-      if (!groqKey) return Response.json({ error: 'GROQ_API_KEY not set' }, { status: 500 });
-      const result = await callGroqLlama(messages, groqKey);
-      raw          = result.content;
-      inputTokens  = result.input_tokens;
-      outputTokens = result.output_tokens;
-      provider     = 'groq';
-
-    // 3. Modelo nativo Base44 via InvokeLLM
+    // 2. Fallback para chaves padrão do Administrador (Deno.env)
     } else {
-      const promptText = messages.map(m => `${m.role}: ${m.content}`).join('\n');
-      raw = await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: promptText,
-        model: requestedModel,
-      });
-      inputTokens  = Math.round(promptText.length / 4);
-      outputTokens = Math.round(raw.length / 4);
-      provider     = 'base44';
+      const getEnvKey = (name) => Deno.env.get(`ADMIN_${name}_API_KEY`) || Deno.env.get(`${name}_API_KEY`);
+      const groqKey       = getEnvKey('GROQ');
+      const mistralKey    = getEnvKey('MISTRAL');
+      const openaiKey     = getEnvKey('OPENAI');
+      const geminiKey     = getEnvKey('GOOGLE') || getEnvKey('GEMINI');
+      const anthropicKey  = getEnvKey('ANTHROPIC');
+      const deepseekKey   = getEnvKey('DEEPSEEK');
+      const xaiKey        = getEnvKey('XAI');
+      const perplexityKey = getEnvKey('PERPLEXITY');
+      const cohereKey     = getEnvKey('COHERE');
+
+      let fallbackProvider = null;
+      let fallbackKey      = null;
+      let fallbackModel    = requestedModel || 'gpt-4o-mini';
+      let fallbackEndpoint = null;
+
+      if (requestedModel.includes('llama') || requestedModel.includes('mixtral') || requestedModel.includes('gemma')) {
+        fallbackKey = groqKey || mistralKey || openaiKey || geminiKey;
+        if (fallbackKey === groqKey && groqKey) { fallbackProvider = 'groq'; fallbackEndpoint = PROVIDER_ENDPOINTS.groq; fallbackModel = 'llama-3.3-70b-versatile'; }
+        else if (fallbackKey === mistralKey && mistralKey) { fallbackProvider = 'mistral'; fallbackEndpoint = PROVIDER_ENDPOINTS.mistral; fallbackModel = 'mistral-large-latest'; }
+        else if (fallbackKey === openaiKey && openaiKey) { fallbackProvider = 'openai'; fallbackEndpoint = PROVIDER_ENDPOINTS.openai; fallbackModel = 'gpt-4o'; }
+        else if (fallbackKey === geminiKey && geminiKey) { fallbackProvider = 'google'; fallbackModel = 'gemini-1.5-pro'; }
+      } else if (requestedModel.includes('mistral') || requestedModel.includes('codestral')) {
+        fallbackKey = mistralKey || groqKey || openaiKey || geminiKey;
+        if (fallbackKey === mistralKey && mistralKey) { fallbackProvider = 'mistral'; fallbackEndpoint = PROVIDER_ENDPOINTS.mistral; }
+        else if (fallbackKey === groqKey && groqKey) { fallbackProvider = 'groq'; fallbackEndpoint = PROVIDER_ENDPOINTS.groq; fallbackModel = 'llama-3.3-70b-versatile'; }
+        else if (fallbackKey === openaiKey && openaiKey) { fallbackProvider = 'openai'; fallbackEndpoint = PROVIDER_ENDPOINTS.openai; fallbackModel = 'gpt-4o'; }
+        else if (fallbackKey === geminiKey && geminiKey) { fallbackProvider = 'google'; fallbackModel = 'gemini-1.5-pro'; }
+      } else if (requestedModel.includes('gpt') || requestedModel.includes('o1') || requestedModel.includes('o3') || requestedModel.includes('mini')) {
+        fallbackKey = openaiKey || mistralKey || groqKey || geminiKey;
+        if (fallbackKey === openaiKey && openaiKey) { fallbackProvider = 'openai'; fallbackEndpoint = PROVIDER_ENDPOINTS.openai; fallbackModel = requestedModel === 'gpt_5_mini' ? 'gpt-4o-mini' : requestedModel; }
+        else if (fallbackKey === mistralKey && mistralKey) { fallbackProvider = 'mistral'; fallbackEndpoint = PROVIDER_ENDPOINTS.mistral; fallbackModel = 'mistral-small-latest'; }
+        else if (fallbackKey === groqKey && groqKey) { fallbackProvider = 'groq'; fallbackEndpoint = PROVIDER_ENDPOINTS.groq; fallbackModel = 'llama-3.3-70b-versatile'; }
+        else if (fallbackKey === geminiKey && geminiKey) { fallbackProvider = 'google'; fallbackModel = 'gemini-1.5-flash'; }
+      } else if (requestedModel.includes('claude')) {
+        fallbackKey = anthropicKey || mistralKey || groqKey || openaiKey || geminiKey;
+        if (fallbackKey === anthropicKey && anthropicKey) { fallbackProvider = 'anthropic'; fallbackModel = requestedModel === 'claude_sonnet_4_6' ? 'claude-3-5-sonnet-latest' : requestedModel; }
+        else if (fallbackKey === mistralKey && mistralKey) { fallbackProvider = 'mistral'; fallbackEndpoint = PROVIDER_ENDPOINTS.mistral; fallbackModel = 'mistral-large-latest'; }
+        else if (fallbackKey === groqKey && groqKey) { fallbackProvider = 'groq'; fallbackEndpoint = PROVIDER_ENDPOINTS.groq; fallbackModel = 'llama-3.3-70b-versatile'; }
+        else if (fallbackKey === openaiKey && openaiKey) { fallbackProvider = 'openai'; fallbackEndpoint = PROVIDER_ENDPOINTS.openai; fallbackModel = 'gpt-4o'; }
+        else if (fallbackKey === geminiKey && geminiKey) { fallbackProvider = 'google'; fallbackModel = 'gemini-1.5-pro'; }
+      } else if (requestedModel.includes('deepseek')) {
+        fallbackKey = deepseekKey || groqKey || openaiKey || mistralKey;
+        if (fallbackKey === deepseekKey && deepseekKey) { fallbackProvider = 'deepseek'; fallbackEndpoint = PROVIDER_ENDPOINTS.deepseek; }
+        else if (fallbackKey === groqKey && groqKey) { fallbackProvider = 'groq'; fallbackEndpoint = PROVIDER_ENDPOINTS.groq; fallbackModel = 'deepseek-r1-distill-llama-70b'; }
+        else if (fallbackKey === openaiKey && openaiKey) { fallbackProvider = 'openai'; fallbackEndpoint = PROVIDER_ENDPOINTS.openai; fallbackModel = 'gpt-4o'; }
+      } else if (requestedModel.includes('grok') || requestedModel.includes('xai')) {
+        fallbackKey = xaiKey || openaiKey || groqKey;
+        if (fallbackKey === xaiKey && xaiKey) { fallbackProvider = 'xai'; fallbackEndpoint = PROVIDER_ENDPOINTS.xai; }
+        else if (fallbackKey === openaiKey && openaiKey) { fallbackProvider = 'openai'; fallbackEndpoint = PROVIDER_ENDPOINTS.openai; fallbackModel = 'gpt-4o'; }
+      } else if (requestedModel.includes('sonar') || requestedModel.includes('perplexity')) {
+        fallbackKey = perplexityKey || openaiKey || groqKey;
+        if (fallbackKey === perplexityKey && perplexityKey) { fallbackProvider = 'perplexity'; fallbackEndpoint = PROVIDER_ENDPOINTS.perplexity; }
+        else if (fallbackKey === openaiKey && openaiKey) { fallbackProvider = 'openai'; fallbackEndpoint = PROVIDER_ENDPOINTS.openai; fallbackModel = 'gpt-4o'; }
+      } else if (requestedModel.includes('command') || requestedModel.includes('cohere')) {
+        fallbackKey = cohereKey || openaiKey || groqKey;
+        if (fallbackKey === cohereKey && cohereKey) { fallbackProvider = 'cohere'; }
+        else if (fallbackKey === openaiKey && openaiKey) { fallbackProvider = 'openai'; fallbackEndpoint = PROVIDER_ENDPOINTS.openai; fallbackModel = 'gpt-4o'; }
+      }
+
+      // Se nenhum específico casou, pega a primeira chave de admin disponível
+      if (!fallbackKey) {
+        fallbackKey = openaiKey || groqKey || mistralKey || geminiKey || anthropicKey || deepseekKey || xaiKey || perplexityKey || cohereKey;
+        if (fallbackKey === openaiKey && openaiKey) { fallbackProvider = 'openai'; fallbackEndpoint = PROVIDER_ENDPOINTS.openai; fallbackModel = 'gpt-4o-mini'; }
+        else if (fallbackKey === groqKey && groqKey) { fallbackProvider = 'groq'; fallbackEndpoint = PROVIDER_ENDPOINTS.groq; fallbackModel = 'llama-3.3-70b-versatile'; }
+        else if (fallbackKey === mistralKey && mistralKey) { fallbackProvider = 'mistral'; fallbackEndpoint = PROVIDER_ENDPOINTS.mistral; fallbackModel = 'mistral-small-latest'; }
+        else if (fallbackKey === geminiKey && geminiKey) { fallbackProvider = 'google'; fallbackModel = 'gemini-1.5-flash'; }
+        else if (fallbackKey === anthropicKey && anthropicKey) { fallbackProvider = 'anthropic'; fallbackModel = 'claude-3-5-sonnet-latest'; }
+        else if (fallbackKey === deepseekKey && deepseekKey) { fallbackProvider = 'deepseek'; fallbackEndpoint = PROVIDER_ENDPOINTS.deepseek; fallbackModel = 'deepseek-chat'; }
+        else if (fallbackKey === xaiKey && xaiKey) { fallbackProvider = 'xai'; fallbackEndpoint = PROVIDER_ENDPOINTS.xai; fallbackModel = 'grok-2-1212'; }
+        else if (fallbackKey === perplexityKey && perplexityKey) { fallbackProvider = 'perplexity'; fallbackEndpoint = PROVIDER_ENDPOINTS.perplexity; fallbackModel = 'sonar'; }
+        else if (fallbackKey === cohereKey && cohereKey) { fallbackProvider = 'cohere'; fallbackModel = 'command-r-08-2024'; }
+      }
+
+      if (fallbackKey && fallbackProvider) {
+        let result;
+        if (fallbackProvider === 'anthropic') {
+          result = await callAnthropic(fallbackKey, messages, fallbackModel, 2048, 0.3);
+        } else if (fallbackProvider === 'google') {
+          result = await callGoogle(fallbackKey, messages, fallbackModel, 2048, 0.3);
+        } else if (fallbackProvider === 'cohere') {
+          result = await callCohere(fallbackKey, messages, fallbackModel, 2048, 0.3);
+        } else {
+          result = await callOpenAICompatible(fallbackEndpoint, fallbackKey, messages, fallbackModel, 2048, 0.3);
+        }
+        raw          = result.content;
+        inputTokens  = result.input_tokens;
+        outputTokens = result.output_tokens;
+        provider     = `admin-${fallbackProvider}`;
+        modelId      = fallbackModel;
+
+      // 3. Fallback final para InvokeLLM nativo da Base44
+      } else {
+        const promptText = messages.map(m => `${m.role}: ${m.content}`).join('\n');
+        raw = await base44.asServiceRole.integrations.Core.InvokeLLM({
+          prompt: promptText,
+          model: requestedModel,
+        });
+        inputTokens  = Math.round(promptText.length / 4);
+        outputTokens = Math.round(raw.length / 4);
+        provider     = 'base44';
+        modelId      = requestedModel;
+      }
     }
 
     const parsed = parseResponse(raw);

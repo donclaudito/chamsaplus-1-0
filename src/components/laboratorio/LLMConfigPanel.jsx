@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Plus, Trash2, CheckCircle2, Eye, EyeOff, Zap, AlertCircle, Loader2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -83,6 +84,8 @@ function ConfigCard({ cfg, onToggle, onEdit, onDelete, isDeleting }) {
 }
 
 export default function LLMConfigPanel() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.email === 'dr.chamsa@hospital.gov' || user?.email === 'clauorenstein@gmail.com';
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -101,8 +104,13 @@ export default function LLMConfigPanel() {
       const cfg = await base44.entities.UserLLMConfig.create(data);
       if (cfg.api_key_encrypted) {
         const provKey = cfg.provider.toUpperCase();
-        localStorage.setItem(`LLM_KEY_${provKey}`, cfg.api_key_encrypted);
-        localStorage.setItem(`${provKey}_API_KEY`, cfg.api_key_encrypted);
+        if (isAdmin) {
+          localStorage.setItem(`ADMIN_${provKey}_API_KEY`, cfg.api_key_encrypted);
+          localStorage.setItem(`LLM_KEY_${provKey}`, cfg.api_key_encrypted);
+          localStorage.setItem(`${provKey}_API_KEY`, cfg.api_key_encrypted);
+        } else {
+          localStorage.setItem(`USER_${provKey}_API_KEY_${user?.email}`, cfg.api_key_encrypted);
+        }
       }
       // Sync to CustomPlatform so it shows up in ModelSelector
       const providerLabel = PROVIDERS.find(p => p.id === data.provider)?.label || data.provider;
@@ -125,8 +133,13 @@ export default function LLMConfigPanel() {
       const updated = await base44.entities.UserLLMConfig.update(id, data);
       if (updated.api_key_encrypted) {
         const provKey = updated.provider.toUpperCase();
-        localStorage.setItem(`LLM_KEY_${provKey}`, updated.api_key_encrypted);
-        localStorage.setItem(`${provKey}_API_KEY`, updated.api_key_encrypted);
+        if (isAdmin) {
+          localStorage.setItem(`ADMIN_${provKey}_API_KEY`, updated.api_key_encrypted);
+          localStorage.setItem(`LLM_KEY_${provKey}`, updated.api_key_encrypted);
+          localStorage.setItem(`${provKey}_API_KEY`, updated.api_key_encrypted);
+        } else {
+          localStorage.setItem(`USER_${provKey}_API_KEY_${user?.email}`, updated.api_key_encrypted);
+        }
       }
       // Sync CustomPlatform
       const platforms = await base44.entities.CustomPlatform.filter({ _user_llm_config_id: id });
