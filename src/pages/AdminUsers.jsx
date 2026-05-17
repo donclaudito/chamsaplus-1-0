@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Clock, Users, ShieldCheck, Search, Calendar } from 'lucide-react';
+import { Clock, Users, ShieldCheck, Search, Calendar, History } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,7 @@ export default function AdminUsers() {
   const pendingCount = users.filter(u => !u.is_approved).length;
   const approvedCount = users.filter(u => u.is_approved).length;
   const loggedCount = users.filter(u => !!u.last_login_date).length;
+  const recentLoggedUsers = [...users].filter(u => !!u.last_login_date).sort((a, b) => new Date(b.last_login_date) - new Date(a.last_login_date)).slice(0, 6);
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-64">
@@ -83,6 +84,43 @@ export default function AdminUsers() {
           <span className="px-2.5 py-1 font-medium text-muted-foreground">Total: <strong className="text-foreground">{users.length}</strong></span>
         </div>
       </div>
+
+      {/* Histórico de Usuários Logados Recentemente */}
+      {recentLoggedUsers.length > 0 && (
+        <div className="bg-gradient-to-r from-violet-500/10 via-primary/5 to-pink-500/10 border border-violet-500/20 rounded-2xl p-6 shadow-sm animate-in fade-in-50 duration-300">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-600">
+              <History className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Histórico de Usuários Logados Recentemente</h2>
+              <p className="text-xs text-muted-foreground">Últimos acessos registrados na plataforma</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {recentLoggedUsers.map(u => (
+              <div key={u.id} className="bg-card/80 backdrop-blur-sm border border-border/80 rounded-xl p-3 flex items-center gap-3 shadow-xs hover:border-violet-500/30 transition-all">
+                <div className="w-9 h-9 rounded-full bg-violet-500/10 flex items-center justify-center text-xs font-bold text-violet-600 shrink-0">
+                  {(u.name || u.full_name || u.email || '?')[0].toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-semibold text-foreground truncate">{u.name || u.full_name || '—'}</p>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {u.role || 'user'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate">{u.email}</p>
+                  <div className="flex items-center gap-1 text-[10px] text-violet-600/80 mt-1 font-medium">
+                    <Clock className="w-2.5 h-2.5" />
+                    <span>{new Date(u.last_login_date).toLocaleDateString('pt-BR')} às {new Date(u.last_login_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Barra de Filtros e Pesquisa */}
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card p-4 rounded-2xl border border-border/80 shadow-sm">
