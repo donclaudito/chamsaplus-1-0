@@ -52,6 +52,7 @@ export default function AppLayout() {
   const deleteChatMutation = useMutation({
     mutationFn: (id) => base44.entities.ChatSession.delete(id),
     onSuccess: (_, deletedId) => {
+      queryClient.setQueryData(['chatSessions', currentUser?.email], (old = []) => old.filter(c => c.id !== deletedId));
       queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
       if (activeChatId === deletedId) {
         const remaining = chatSessions.filter(c => c.id !== deletedId);
@@ -62,17 +63,24 @@ export default function AppLayout() {
 
   const renameChatMutation = useMutation({
     mutationFn: ({ id, title }) => base44.entities.ChatSession.update(id, { title }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['chatSessions'] }),
+    onSuccess: (_, { id, title }) => {
+      queryClient.setQueryData(['chatSessions', currentUser?.email], (old = []) => old.map(c => c.id === id ? { ...c, title } : c));
+      queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
+    },
   });
 
   const pinChatMutation = useMutation({
     mutationFn: ({ id, pinned }) => base44.entities.ChatSession.update(id, { pinned }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['chatSessions'] }),
+    onSuccess: (_, { id, pinned }) => {
+      queryClient.setQueryData(['chatSessions', currentUser?.email], (old = []) => old.map(c => c.id === id ? { ...c, pinned } : c));
+      queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
+    },
   });
 
   const bulkDeleteMutation = useMutation({
     mutationFn: (ids) => Promise.all(ids.map(id => base44.entities.ChatSession.delete(id))),
     onSuccess: (_, ids) => {
+      queryClient.setQueryData(['chatSessions', currentUser?.email], (old = []) => old.filter(c => !ids.includes(c.id)));
       queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
       if (ids.includes(activeChatId)) {
         const remaining = chatSessions.filter(c => !ids.includes(c.id));
