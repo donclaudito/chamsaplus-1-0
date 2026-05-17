@@ -1,11 +1,27 @@
 // Mock local autônomo do @base44/sdk para o Chamsa ISA Plus
 // Permite execução 100% offline, persistência no localStorage e chamadas diretas de IA
 
-function createLocalStorageEntity(entityName, initialData = []) {
-  const storageKey = `chamsa_entity_${entityName}`;
+function getCurrentUserEmail() {
+  if (typeof window === 'undefined') return 'default';
+  const localUser = localStorage.getItem('authUser');
+  if (localUser) {
+    try {
+      const parsed = JSON.parse(localUser);
+      if (parsed.email) return parsed.email;
+    } catch (_) {}
+  }
+  return 'default';
+}
+
+function createLocalStorageEntity(entityName, initialData = [], isGlobal = false) {
+  const getStorageKey = () => {
+    if (isGlobal) return `chamsa_entity_${entityName}`;
+    return `chamsa_entity_${entityName}_${getCurrentUserEmail()}`;
+  };
 
   const getItems = () => {
     if (typeof window === 'undefined') return initialData;
+    const storageKey = getStorageKey();
     const existing = localStorage.getItem(storageKey);
     if (!existing) {
       localStorage.setItem(storageKey, JSON.stringify(initialData));
@@ -23,6 +39,22 @@ function createLocalStorageEntity(entityName, initialData = []) {
           }
         }
       }
+      if (entityName === 'User') {
+        const uniqueUsers = [];
+        const seenIds = new Set();
+        const seenEmails = new Set();
+        for (const u of parsed) {
+          if (!seenIds.has(u.id) && !seenEmails.has(u.email)) {
+            seenIds.add(u.id);
+            if (u.email) seenEmails.add(u.email);
+            uniqueUsers.push(u);
+          }
+        }
+        if (uniqueUsers.length < parsed.length) {
+          localStorage.setItem(storageKey, JSON.stringify(uniqueUsers));
+        }
+        return uniqueUsers;
+      }
       return parsed;
     } catch (_) {
       return initialData;
@@ -31,6 +63,7 @@ function createLocalStorageEntity(entityName, initialData = []) {
 
   const saveItems = (items) => {
     if (typeof window !== 'undefined') {
+      const storageKey = getStorageKey();
       localStorage.setItem(storageKey, JSON.stringify(items));
     }
   };
@@ -75,6 +108,15 @@ function createLocalStorageEntity(entityName, initialData = []) {
     },
     create: async (data) => {
       const items = getItems();
+      if (entityName === 'User') {
+        const existingIndex = items.findIndex(item => (data.id && item.id === data.id) || (data.email && item.email === data.email));
+        if (existingIndex !== -1) {
+          const updatedItem = { ...items[existingIndex], ...data };
+          items[existingIndex] = updatedItem;
+          saveItems([...items]);
+          return updatedItem;
+        }
+      }
       const newItem = {
         id: `${entityName.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         created_date: new Date().toISOString(),
@@ -168,16 +210,16 @@ const SEED_USER_LLM_CONFIG = [
 
 // Instanciação das Entidades
 const entities = {
-  User: createLocalStorageEntity('User', SEED_USERS),
-  ChatSession: createLocalStorageEntity('ChatSession', SEED_CHATS),
-  CustomSkill: createLocalStorageEntity('CustomSkill', SEED_SKILLS),
-  Knowledge: createLocalStorageEntity('Knowledge', SEED_KNOWLEDGE),
-  KnowledgeFolder: createLocalStorageEntity('KnowledgeFolder', SEED_FOLDERS),
-  KnowledgeVector: createLocalStorageEntity('KnowledgeVector', []),
-  CustomIntegration: createLocalStorageEntity('CustomIntegration', SEED_INTEGRATIONS),
-  LLMUsageLog: createLocalStorageEntity('LLMUsageLog', []),
-  UserLLMConfig: createLocalStorageEntity('UserLLMConfig', SEED_USER_LLM_CONFIG),
-  CustomPlatform: createLocalStorageEntity('CustomPlatform', [])
+  User: createLocalStorageEntity('User', SEED_USERS, true), // Global para que o Admin veja todos os usuários cadastrados
+  ChatSession: createLocalStorageEntity('ChatSession', SEED_CHATS, false), // Isolado por usuário
+  CustomSkill: createLocalStorageEntity('CustomSkill', SEED_SKILLS, false), // Isolado por usuário
+  Knowledge: createLocalStorageEntity('Knowledge', SEED_KNOWLEDGE, false), // Isolado por usuário
+  KnowledgeFolder: createLocalStorageEntity('KnowledgeFolder', SEED_FOLDERS, false), // Isolado por usuário
+  KnowledgeVector: createLocalStorageEntity('KnowledgeVector', [], false), // Isolado por usuário
+  CustomIntegration: createLocalStorageEntity('CustomIntegration', SEED_INTEGRATIONS, false), // Isolado por usuário
+  LLMUsageLog: createLocalStorageEntity('LLMUsageLog', [], false), // Isolado por usuário
+  UserLLMConfig: createLocalStorageEntity('UserLLMConfig', SEED_USER_LLM_CONFIG, false), // Isolado por usuário (chaves individuais)
+  CustomPlatform: createLocalStorageEntity('CustomPlatform', [], true) // Global para plataformas base
 };
 
 export const base44 = {
@@ -191,11 +233,13 @@ export const base44 = {
           });
           if (res.ok) {
             const data = await res.json();
+            const email = data.dadosUsuario?.email || 'usuario@chamsa.gov';
+            const role = (email === 'clauorenstein@gmail.com' || email === 'dr.chamsa@hospital.gov') ? 'admin' : 'user';
             return {
               id: data.dadosUsuario?.id || 'usr_1',
-              email: data.dadosUsuario?.email || 'usuario@chamsa.gov',
-              name: data.dadosUsuario?.nome || data.dadosUsuario?.email || 'Usuário Autenticado',
-              role: 'admin',
+              email,
+              name: data.dadosUsuario?.nome || email,
+              role,
               is_approved: true,
               is_verified: true,
               created_date: new Date().toISOString()
@@ -211,11 +255,13 @@ export const base44 = {
       if (localUser) {
         try {
           const parsed = JSON.parse(localUser);
+          const email = parsed.email || 'usuario@chamsa.gov';
+          const role = (email === 'clauorenstein@gmail.com' || email === 'dr.chamsa@hospital.gov') ? 'admin' : 'user';
           return {
             id: parsed.id || 'usr_local',
-            email: parsed.email || 'usuario@chamsa.gov',
-            name: parsed.nome || parsed.email || 'Usuário Local',
-            role: 'admin',
+            email,
+            name: parsed.nome || email,
+            role,
             is_approved: true,
             is_verified: true,
             created_date: new Date().toISOString()
